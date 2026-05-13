@@ -6,6 +6,7 @@
   <title>UPS AR 接線導引 — Barcode 版</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <script src="test.js"></script>
   <style>
     body { margin:0; overflow:hidden; font-family:sans-serif; }
 
@@ -157,47 +158,7 @@
   </a-scene>
 
   <script>
-    // ── 各 Marker 偵測事件 ────────────────────────────
-    const hudEl = document.getElementById('hud');
-    const sectionNames = ['INPUT 輸入端', 'OUTPUT 輸出端', 'BATTERY 電池組'];
-
-    [0,1,2].forEach(id => {
-      const m = document.getElementById('m' + id);
-      m.addEventListener('markerFound', () => {
-        hudEl.innerHTML = `✅ 已辨識 Marker ID ${id} — ${sectionNames[id]}<br>
-          <span style="font-size:12px">ID 0 → 輸入端 ｜ ID 1 → 輸出端 ｜ ID 2 → 電池組</span>`;
-      });
-      m.addEventListener('markerLost', () => {
-        hudEl.innerHTML = `📷 請將攝像頭對準 Barcode Marker<br>
-          <span style="font-size:12px">ID 0 → 輸入端 ｜ ID 1 → 輸出端 ｜ ID 2 → 電池組</span>`;
-      });
-    });
-
-    // ── 警示狀態切換 ──────────────────────────────────
-    function setStatus(id, state) {
-      const warn = document.getElementById('warn' + id);
-      const ok   = document.getElementById('ok'   + id);
-      const warnBanner = document.getElementById('warning');
-
-      if (state === 'ok') {
-        warn.setAttribute('visible','false');
-        ok.setAttribute('visible','true');
-        warnBanner.style.display = 'none';
-      } else {
-        warn.setAttribute('visible','true');
-        ok.setAttribute('visible','false');
-        warnBanner.style.display = 'block';
-        warnBanner.textContent = `⚠️ Marker ID${id} (${sectionNames[id]}) 接線錯誤！`;
-      }
-    }
-
-    function resetAll() {
-      [0,1,2].forEach(id => {
-        document.getElementById('warn'+id).setAttribute('visible','false');
-        document.getElementById('ok'  +id).setAttribute('visible','false');
-      });
-      document.getElementById('warning').style.display = 'none';
-    }
+    
   </script>
 
 </body>

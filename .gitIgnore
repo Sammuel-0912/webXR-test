@@ -1,0 +1,4 @@
+*.png
+.env
+.venv
+*.db
