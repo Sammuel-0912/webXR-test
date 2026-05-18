@@ -5,59 +5,104 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>AR 點檢</title>
 
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <!--
+    A-Frame 1.3.0 + AR.js 3.4.5（jsdelivr 固定版本，雲端穩定）
+    raw.githack.com/master 在雲端環境容易失效，請勿使用
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe-master.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #000; overflow: hidden; color: #fff; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0d1117; overflow: hidden; color: #fff; }
 
     /* ── Top bar ── */
     #top-bar {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 300;
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 16px;
-      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
     }
-    #top-bar .title { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+    .title { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
     #back-btn {
       background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-      color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px;
-      cursor: pointer;
+      color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer;
     }
 
-    /* ── Loading overlay ── */
-    #loading-overlay {
-      position: fixed; inset: 0; z-index: 300;
+    /* ══════════════════════════════════════════
+       START SCREEN（裝置載入後顯示，等待使用者點擊才啟動相機）
+       行動瀏覽器在 HTTPS 上必須有 user gesture 才能呼叫 getUserMedia
+    ══════════════════════════════════════════ */
+    #start-screen {
+      position: fixed; inset: 0; z-index: 200;
       background: #0d1117;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 16px;
+      align-items: center; justify-content: center;
+      gap: 20px; padding: 32px;
+      transition: opacity .3s;
+    }
+    #start-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .start-icon { font-size: 64px; }
+
+    #start-device-list {
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+      padding: 14px 18px; width: 100%; max-width: 340px;
+    }
+    .sdl-title { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .sdl-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 14px;
+    }
+    .sdl-item:last-child { border-bottom: none; }
+    .sdl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    #start-btn {
+      width: 100%; max-width: 340px;
+      padding: 18px;
+      background: #22c55e; color: #fff;
+      font-size: 18px; font-weight: 700; letter-spacing: 1px;
+      border: none; border-radius: 16px; cursor: pointer;
+      box-shadow: 0 4px 24px rgba(34,197,94,.4);
+      transition: transform .12s, box-shadow .12s;
+    }
+    #start-btn:active { transform: scale(.97); }
+    #start-btn:disabled { background: #374151; color: #6b7280; box-shadow: none; cursor: not-allowed; }
+    #start-status { font-size: 13px; color: #8b949e; }
+
+    /* ── Loading spinner（取得設備清單時顯示）── */
+    #loading-overlay {
+      position: fixed; inset: 0; z-index: 250;
+      background: #0d1117;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
     }
     #loading-overlay.hidden { display: none; }
     .ld-spinner {
-      width: 36px; height: 36px;
+      width: 34px; height: 34px;
       border: 3px solid #30363d; border-top-color: #58a6ff;
       border-radius: 50%; animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loading-msg { font-size: 15px; color: #8b949e; }
-    #device-count { font-size: 12px; color: #555; margin-top: 4px; }
+    #loading-msg { font-size: 14px; color: #8b949e; }
 
-    /* ── Scan hint ── */
+    /* ── AR 執行中 UI ── */
     #scan-hint {
       position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
       z-index: 100; background: rgba(0,0,0,0.6);
       border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
       padding: 10px 20px; font-size: 14px; color: #ccc;
       pointer-events: none; transition: opacity .4s; white-space: nowrap;
+      display: none;
     }
+    #scan-hint.visible { display: block; }
     #scan-hint.qr-mode { color: #58a6ff; border-color: #58a6ff44; }
 
-    /* ── Crosshair ── */
     #crosshair {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      width: 180px; height: 180px; pointer-events: none; z-index: 50;
+      width: 180px; height: 180px; pointer-events: none; z-index: 50; display: none;
     }
+    #crosshair.visible { display: block; }
     #crosshair svg { width: 100%; height: 100%; }
 
     /* ── Bottom sheet ── */
@@ -109,19 +154,20 @@
     #feedback.success { background: rgba(34,197,94,.18); color: #4ade80; }
     #feedback.error   { background: rgba(239,68,68,.18);  color: #f87171; }
 
-    #conn-error {
-      display: none; position: fixed; top: 56px; left: 0; right: 0; z-index: 150;
-      background: rgba(220,38,38,.9); color: #fff;
-      padding: 10px 16px; font-size: 13px; text-align: center; line-height: 1.5;
-    }
-    #conn-error.visible { display: block; }
-
+    /* ── QR mode banner ── */
     #qr-mode-banner {
       display: none; position: fixed; top: 52px; left: 0; right: 0; z-index: 100;
       background: rgba(88,166,255,.15); border-bottom: 1px solid rgba(88,166,255,.3);
       color: #58a6ff; text-align: center; padding: 7px; font-size: 13px;
     }
     #qr-mode-banner.visible { display: block; }
+
+    #conn-error {
+      display: none; position: fixed; top: 52px; left: 0; right: 0; z-index: 400;
+      background: rgba(220,38,38,.9); color: #fff;
+      padding: 10px 16px; font-size: 13px; text-align: center; line-height: 1.5;
+    }
+    #conn-error.visible { display: block; }
   </style>
 </head>
 <body>
@@ -131,16 +177,27 @@
   <button id="back-btn">← 儀表板</button>
 </div>
 
-<div id="qr-mode-banner">📱 QR Code 掃碼模式 — 設備資訊已自動帶入</div>
+<div id="qr-mode-banner">📱 QR Code 掃碼模式</div>
 <div id="conn-error"></div>
 
-<!-- 載入中 overlay：等待後端回傳設備清單 -->
+<!-- 1. 載入中（取得設備時） -->
 <div id="loading-overlay">
   <div class="ld-spinner"></div>
   <div id="loading-msg">正在載入設備清單…</div>
-  <div id="device-count"></div>
 </div>
 
+<!-- 2. Start Screen（設備載入後顯示，等待使用者點擊才啟動相機）-->
+<div id="start-screen" class="hidden">
+  <div class="start-icon">📡</div>
+  <div id="start-device-list">
+    <div class="sdl-title">已載入設備</div>
+    <div id="sdl-items"></div>
+  </div>
+  <button id="start-btn" onclick="startAR()">▶ 開始 AR 掃描</button>
+  <div id="start-status">點擊後瀏覽器會請求相機權限</div>
+</div>
+
+<!-- 3. AR 執行中 UI（start-screen 後才顯示） -->
 <div id="crosshair">
   <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M10 50 L10 10 L50 10"       stroke="white" stroke-width="3" stroke-linecap="round"/>
@@ -170,17 +227,10 @@
 </div>
 
 <!--
-  A-Frame scene：不寫任何 <a-marker>
-  全部由 JS 在取得設備清單後動態建立
+  A-Frame scene 不寫在 HTML 裡，改由 startAR() 動態建立並插入
+  原因：行動瀏覽器 HTTPS 環境需要 user gesture 才能呼叫 getUserMedia
+        若在頁面載入時就建立 scene，瀏覽器會拒絕相機存取
 -->
-<a-scene id="ar-scene"
-  embedded
-  arjs="sourceType:webcam; detectionMode:mono_and_matrix; matrixCodeType:3x3; debugUIEnabled:false;"
-  vr-mode-ui="enabled:false"
-  renderer="logarithmicDepthBuffer:true; precision:medium;"
-  style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;">
-  <a-entity camera></a-entity>
-</a-scene>
 
 <script>
 // ── URL 參數 ──────────────────────────────────────────────────────
@@ -189,36 +239,118 @@ const BACKEND = (_p.get('backend') || '__VITE_BACKEND_URL__').replace(/\/$/, '')
 const urlMarkerId = _p.get('marker_id')
 const qrMode      = urlMarkerId !== null
 
-// Back 按鈕
 document.getElementById('back-btn').onclick = () => { window.location.href = '/dashboard' }
 
-// ── 狀態 ──────────────────────────────────────────────────────────
-let currentMarkerId = null
-let deviceCache     = {}   // marker_id → device 物件
-let submitting      = false
+if (qrMode) {
+  document.getElementById('qr-mode-banner').classList.add('visible')
+}
 
-// ── Marker 顏色池（依 marker_id 輪替）────────────────────────────
+// ── 狀態 ─────────────────────────────────────────────────────────
 const MARKER_COLORS = [
   '#22c55e','#3b82f6','#f59e0b','#a855f7',
   '#ef4444','#06b6d4','#84cc16','#f97316',
   '#ec4899','#14b8a6','#eab308','#8b5cf6',
 ]
+let currentMarkerId = null
+let deviceCache     = {}
+let submitting      = false
+let allDevices      = []
 
-// ── 動態建立 <a-marker> ───────────────────────────────────────────
-function buildMarkers(devices) {
-  const scene = document.getElementById('ar-scene')
-  const camera = scene.querySelector('[camera]')   // 保留 camera entity
+// ── Step 1：取得設備清單 ──────────────────────────────────────────
+async function loadDevices() {
+  try {
+    const res = await fetch(BACKEND + '/devices', { signal: AbortSignal.timeout(8000) })
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    allDevices = await res.json()
+    allDevices.forEach(d => { deviceCache[d.marker_id] = d })
+    renderStartScreen(allDevices)
+  } catch (e) {
+    setLoadingMsg('後端連線失敗')
+    showConnError('⚠ 無法連線後端 (' + BACKEND + ')，請確認服務已啟動')
+    // QR mode：即使後端失效也讓使用者能操作
+    if (qrMode) {
+      hideLoading()
+      showStartScreen()
+    }
+  }
+}
 
+function renderStartScreen(devices) {
+  const container = document.getElementById('sdl-items')
+  container.innerHTML = devices.map((d, i) => `
+    <div class="sdl-item">
+      <div class="sdl-dot" style="background:${MARKER_COLORS[d.marker_id % MARKER_COLORS.length]}"></div>
+      <span>Marker ${d.marker_id}：${d.name}</span>
+    </div>
+  `).join('')
+  hideLoading()
+  showStartScreen()
+
+  // QR mode：跳過 start-screen，直接進入點檢（使用者已掃 QR 主動觸發）
+  if (qrMode) {
+    document.getElementById('start-status').textContent = '自動進入 QR Code 點檢模式…'
+    document.getElementById('start-btn').disabled = true
+    setTimeout(() => {
+      onDevicesReady()
+      onMarkerFound(Number(urlMarkerId))
+    }, 800)
+  }
+}
+
+// ── Step 2：使用者點擊「開始 AR 掃描」後才建立 scene ────────────
+function startAR() {
+  document.getElementById('start-btn').disabled = true
+  document.getElementById('start-status').textContent = '啟動相機中…'
+  onDevicesReady()
+}
+
+function onDevicesReady() {
+  // 隱藏 start-screen
+  document.getElementById('start-screen').classList.add('hidden')
+
+  if (!qrMode) {
+    // 非 QR mode：動態建立 A-Frame scene
+    injectARScene()
+  } else {
+    // QR mode：不需要 AR scene，直接顯示 bottom sheet
+    document.getElementById('crosshair').style.display = 'none'
+  }
+}
+
+// ── 動態建立 A-Frame scene（確保 user gesture 之後才呼叫）────────
+function injectARScene() {
+  const scene = document.createElement('a-scene')
+  scene.id = 'ar-scene'
+  scene.setAttribute('embedded', '')
+  scene.setAttribute('arjs',
+    'sourceType:webcam; detectionMode:mono_and_matrix; matrixCodeType:3x3; debugUIEnabled:false;')
+  scene.setAttribute('vr-mode-ui', 'enabled:false')
+  scene.setAttribute('renderer', 'logarithmicDepthBuffer:true; precision:medium;')
+  scene.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;'
+
+  const camera = document.createElement('a-entity')
+  camera.setAttribute('camera', '')
+  scene.appendChild(camera)
+
+  document.body.appendChild(scene)
+
+  // 等 scene 初始化完成再注入 marker
+  scene.addEventListener('loaded', () => {
+    buildMarkers(allDevices, scene, camera)
+    showScanHint()
+    document.getElementById('crosshair').classList.add('visible')
+    document.getElementById('scan-hint').classList.add('visible')
+  }, { once: true })
+}
+
+// ── 動態建立每一個 <a-marker> ────────────────────────────────────
+function buildMarkers(devices, scene, camera) {
   devices.forEach(dev => {
     const color = MARKER_COLORS[dev.marker_id % MARKER_COLORS.length]
-
-    // <a-marker type="barcode" value="N">
     const marker = document.createElement('a-marker')
     marker.setAttribute('type', 'barcode')
     marker.setAttribute('value', String(dev.marker_id))
-    marker.id = `marker-${dev.marker_id}`
 
-    // 底座色塊
     const box = document.createElement('a-box')
     box.setAttribute('position', '0 0.05 0')
     box.setAttribute('scale', '0.4 0.04 0.4')
@@ -226,7 +358,6 @@ function buildMarkers(devices) {
     box.setAttribute('opacity', '0.85')
     marker.appendChild(box)
 
-    // 作業指引圖片（若有設定）
     if (dev.image_url) {
       const img = document.createElement('a-image')
       img.setAttribute('position', '0 0.6 0')
@@ -236,7 +367,6 @@ function buildMarkers(devices) {
       marker.appendChild(img)
     }
 
-    // 設備名稱文字
     const txt = document.createElement('a-text')
     txt.setAttribute('value', dev.name)
     txt.setAttribute('position', '0 1.3 0')
@@ -245,60 +375,18 @@ function buildMarkers(devices) {
     txt.setAttribute('align', 'center')
     marker.appendChild(txt)
 
-    // 事件
     const id = dev.marker_id
     marker.addEventListener('markerFound', () => onMarkerFound(id))
     marker.addEventListener('markerLost',  () => onMarkerLost())
 
-    // 插入 scene（放在 camera entity 之前）
     scene.insertBefore(marker, camera)
   })
 }
 
-// ── 載入設備清單 ──────────────────────────────────────────────────
-async function loadDevices() {
-  setLoadingMsg('正在連線後端…')
-  try {
-    const res = await fetch(BACKEND + '/devices', { signal: AbortSignal.timeout(8000) })
-    if (!res.ok) throw new Error('HTTP ' + res.status)
-    const devices = await res.json()
-
-    // 建立快取
-    devices.forEach(d => { deviceCache[d.marker_id] = d })
-
-    // 等 A-Frame scene 初始化完畢再注入 marker
-    const scene = document.getElementById('ar-scene')
-    setLoadingMsg(`載入完成，共 ${devices.length} 台設備，初始化 AR…`)
-    document.getElementById('device-count').textContent =
-      devices.map(d => `Marker ${d.marker_id}: ${d.name}`).join('　')
-
-    const inject = () => {
-      buildMarkers(devices)
-      hideLoading()
-      if (qrMode) onMarkerFound(Number(urlMarkerId))
-    }
-
-    if (scene.hasLoaded) { inject() }
-    else { scene.addEventListener('loaded', inject, { once: true }) }
-
-    hideConnError()
-  } catch (e) {
-    setLoadingMsg('無法連線至後端')
-    document.getElementById('device-count').textContent =
-      `(${BACKEND}) — 請確認後端已啟動且在同一網路`
-    showConnError('⚠ 後端連線失敗 (' + BACKEND + ')，請檢查服務狀態後重新整理頁面')
-    hideLoading(2000)   // 2 秒後關閉 loading，讓使用者看到錯誤
-    if (qrMode) setTimeout(() => onMarkerFound(Number(urlMarkerId)), 2000)
-  }
-}
-
-loadDevices()
-
-// ── Marker 事件 ───────────────────────────────────────────────────
+// ── Marker 事件 ──────────────────────────────────────────────────
 function onMarkerFound(markerId) {
   if (currentMarkerId === markerId) return
   currentMarkerId = markerId
-
   const dev = deviceCache[markerId]
   document.getElementById('device-name').textContent = dev ? dev.name : 'Marker ' + markerId
   document.getElementById('device-desc').textContent = dev ? (dev.description || '') : ''
@@ -315,18 +403,13 @@ function onMarkerFound(markerId) {
     imgWrap.classList.add('visible')
   } else { imgWrap.classList.remove('visible') }
 
-  clearFeedback()
-  setButtonsDisabled(false)
-  openSheet()
-  hideScanHint()
+  clearFeedback(); setButtonsDisabled(false); openSheet(); hideScanHint()
 }
 
 function onMarkerLost() {
   if (qrMode) return
   setTimeout(() => {
-    if (currentMarkerId !== null) {
-      currentMarkerId = null; closeSheet(); showScanHint()
-    }
+    if (currentMarkerId !== null) { currentMarkerId = null; closeSheet(); showScanHint() }
   }, 2500)
 }
 
@@ -360,10 +443,13 @@ async function submitInspection(status) {
 }
 
 // ── UI helpers ───────────────────────────────────────────────────
-function openSheet()  { document.getElementById('bottom-sheet').classList.add('open')    }
-function closeSheet() { document.getElementById('bottom-sheet').classList.remove('open') }
-function showScanHint() { document.getElementById('scan-hint').style.opacity = '1' }
-function hideScanHint() { document.getElementById('scan-hint').style.opacity = '0' }
+function openSheet()     { document.getElementById('bottom-sheet').classList.add('open') }
+function closeSheet()    { document.getElementById('bottom-sheet').classList.remove('open') }
+function showScanHint()  { document.getElementById('scan-hint').style.opacity = '1' }
+function hideScanHint()  { document.getElementById('scan-hint').style.opacity = '0' }
+function showStartScreen() { document.getElementById('start-screen').classList.remove('hidden') }
+function hideLoading()   { document.getElementById('loading-overlay').classList.add('hidden') }
+function setLoadingMsg(m){ document.getElementById('loading-msg').textContent = m }
 function setButtonsDisabled(d) {
   document.getElementById('btn-ok').disabled = d
   document.getElementById('btn-warn').disabled = d
@@ -377,19 +463,9 @@ function clearFeedback() {
 function showConnError(msg) {
   const el = document.getElementById('conn-error'); el.textContent = msg; el.classList.add('visible')
 }
-function hideConnError() { document.getElementById('conn-error').classList.remove('visible') }
-function setLoadingMsg(msg) { document.getElementById('loading-msg').textContent = msg }
-function hideLoading(delay = 0) {
-  setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), delay)
-}
 
-// QR mode UI
-if (qrMode) {
-  document.getElementById('qr-mode-banner').classList.add('visible')
-  document.getElementById('scan-hint').classList.add('qr-mode')
-  document.getElementById('scan-hint').textContent = '📱 QR Code 模式 — 直接點選 OK / WARN 完成點檢'
-  document.getElementById('crosshair').style.display = 'none'
-}
+// ── 啟動 ─────────────────────────────────────────────────────────
+loadDevices()
 </script>
 </body>
 </html>
