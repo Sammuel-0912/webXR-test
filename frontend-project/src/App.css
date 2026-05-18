@@ -473,3 +473,159 @@ tbody td {
   font-family: monospace;
 }
 .network-row input:focus { outline: none; border-color: #58a6ff; }
+
+/* ════════════════════════════════════════════
+   AR 點檢頁（ArInspectPage）
+════════════════════════════════════════════ */
+.ar-page {
+  background: #0d1117;
+  min-height: 100vh;
+  color: #fff;
+  overflow: hidden;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── Top bar ── */
+.ar-top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+}
+.ar-title    { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+.ar-back-btn {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer;
+}
+
+/* ── Banners ── */
+.ar-qr-banner {
+  position: fixed; top: 52px; left: 0; right: 0; z-index: 200;
+  background: rgba(88,166,255,.15); border-bottom: 1px solid rgba(88,166,255,.3);
+  color: #58a6ff; text-align: center; padding: 7px; font-size: 13px;
+}
+.ar-conn-error {
+  position: fixed; top: 52px; left: 0; right: 0; z-index: 400;
+  background: rgba(220,38,38,.9); color: #fff;
+  padding: 10px 16px; font-size: 13px; text-align: center; line-height: 1.5;
+}
+
+/* ── Loading overlay ── */
+.ar-loading-overlay {
+  position: fixed; inset: 0; z-index: 250;
+  background: #0d1117;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  font-size: 14px; color: #8b949e;
+}
+
+/* ── Start Screen ── */
+.ar-start-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: #0d1117;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px; padding: 32px;
+  padding-top: 80px;
+  overflow-y: auto;
+}
+.ar-start-icon { font-size: 56px; }
+
+.ar-device-list-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 14px 18px; width: 100%; max-width: 360px;
+}
+.ar-device-list-title {
+  font-size: 11px; color: #8b949e; text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 10px;
+}
+.ar-device-list-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 14px;
+}
+.ar-device-list-item:last-child { border-bottom: none; }
+.ar-device-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.ar-no-devices { color: #666; font-size: 13px; padding: 4px 0; }
+
+.ar-start-btn {
+  width: 100%; max-width: 360px;
+  padding: 18px; background: #22c55e; color: #fff;
+  font-size: 18px; font-weight: 700; letter-spacing: 1px;
+  border: none; border-radius: 16px; cursor: pointer;
+  box-shadow: 0 4px 24px rgba(34,197,94,.4);
+  transition: transform .12s;
+}
+.ar-start-btn:active  { transform: scale(.97); }
+.ar-start-btn:disabled {
+  background: #374151; color: #6b7280; box-shadow: none; cursor: not-allowed;
+}
+.ar-start-hint { font-size: 13px; color: #8b949e; }
+
+/* ── AR 執行中 UI ── */
+.ar-crosshair {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 180px; height: 180px; pointer-events: none; z-index: 50;
+  transition: opacity .3s;
+}
+.ar-crosshair svg { width: 100%; height: 100%; }
+
+.ar-scan-hint {
+  position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
+  z-index: 100; background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+  padding: 10px 20px; font-size: 14px; color: #ccc;
+  pointer-events: none; white-space: nowrap;
+}
+
+/* ── Bottom Sheet ── */
+.ar-bottom-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: #1a1e2e; border-radius: 20px 20px 0 0;
+  padding: 16px 20px 32px;
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 -4px 30px rgba(0,0,0,.6);
+  max-height: 75vh; overflow-y: auto;
+}
+.ar-bottom-sheet.open { transform: translateY(0); }
+.ar-sheet-handle {
+  width: 40px; height: 4px; background: #444; border-radius: 2px; margin: 0 auto 14px;
+}
+
+.ar-device-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+.ar-device-name  { font-size: 20px; font-weight: 700; margin: 2px 0 4px; }
+.ar-device-desc  { font-size: 13px; color: #aaa; margin-bottom: 14px; }
+
+.ar-device-image-wrap { text-align: center; margin-bottom: 14px; }
+.ar-device-image { max-width: 100%; max-height: 180px; border-radius: 8px; object-fit: cover; }
+
+.ar-instruction-wrap  { margin-bottom: 14px; }
+.ar-instruction-title {
+  font-size: 11px; color: #58a6ff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+}
+.ar-instruction-text {
+  background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+  padding: 10px 12px; font-size: 13px; line-height: 1.6;
+  white-space: pre-wrap; color: #c9d1d9; font-family: inherit;
+}
+
+.ar-btn-row { display: flex; gap: 12px; margin-bottom: 14px; }
+.ar-judge-btn {
+  flex: 1; padding: 15px 0; font-size: 17px; font-weight: 700;
+  border: none; border-radius: 14px; cursor: pointer; letter-spacing: 1px;
+  transition: transform .12s;
+}
+.ar-judge-btn:active   { transform: scale(.96); }
+.ar-btn-ok   { background: #22c55e; color: #fff; box-shadow: 0 4px 18px rgba(34,197,94,.35); }
+.ar-btn-warn { background: #f59e0b; color: #fff; box-shadow: 0 4px 18px rgba(245,158,11,.35); }
+.ar-judge-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.ar-feedback {
+  border-radius: 10px; padding: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600;
+}
+.ar-feedback-success { background: rgba(34,197,94,.18); color: #4ade80; }
+.ar-feedback-error   { background: rgba(239,68,68,.18);  color: #f87171; }

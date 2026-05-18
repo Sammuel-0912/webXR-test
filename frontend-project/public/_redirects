@@ -1,4 +1,2 @@
-# SPA fallback — 所有非靜態資源的路徑都交給 index.html 處理
-# Zeabur、Netlify、Cloudflare Pages 均支援此格式
-/ar-inspect.html  /ar-inspect.html  200
-/*                /index.html       200
+# SPA fallback：所有路由交給 React Router 的 index.html 處理
+/*  /index.html  200

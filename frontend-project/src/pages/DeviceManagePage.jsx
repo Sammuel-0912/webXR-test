@@ -53,7 +53,7 @@ function NetworkConfig({ frontendUrl, backendUrl, onChange }) {
 
 // ── Device Card ──────────────────────────────────────────────────────
 function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImageUpload }) {
-  const qrValue = `${frontendUrl}/ar-inspect.html?marker_id=${device.marker_id}&backend=${encodeURIComponent(backendUrl)}`
+  const qrValue = `${frontendUrl}/ar-inspect?marker_id=${device.marker_id}&backend=${encodeURIComponent(backendUrl)}`
   const qrRef   = useRef(null)
 
   function downloadQR() {

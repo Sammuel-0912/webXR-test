@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const BACKEND = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000').replace(/\/$/, '')
 
@@ -76,6 +77,7 @@ function ResultsTable({ results, onDelete }) {
 
 // ── Main Component ───────────────────────────────────────────────────
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const [stats, setStats]       = useState([])
   const [results, setResults]   = useState({})
   const [loading, setLoading]   = useState(true)
@@ -162,7 +164,7 @@ export default function DashboardPage() {
           <h1>點檢儀表板</h1>
         </div>
         <div className="dash-header-right">
-          <button className="btn btn-inspect" onClick={() => window.location.href = '/ar-inspect.html'}>
+          <button className="btn btn-inspect" onClick={() => navigate('/ar-inspect')}>
             📡 開始點檢
           </button>
           <button className="btn btn-secondary" onClick={() => window.location.href = '/devices'}>
@@ -222,13 +224,4 @@ export default function DashboardPage() {
             />
             <button className="btn btn-secondary" onClick={fetchData}>篩選</button>
             <button className="btn btn-secondary" onClick={() => {
-              setFilterMarker(''); setFilterStart(''); setFilterEnd('')
-            }}>清除</button>
-          </div>
-
-          <ResultsTable results={results} onDelete={handleDelete} />
-        </section>
-      </main>
-    </div>
-  )
-}
+              setFilterMarker('');
