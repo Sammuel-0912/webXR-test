@@ -60,6 +60,9 @@ export default function ArInspectPage() {
     return () => {
       const s = document.getElementById('ar-scene-dynamic')
       if (s) s.remove()
+      // 恢復 body 背景色
+      document.body.style.background = ''
+      document.documentElement.style.background = ''
     }
   }, [])
 
@@ -112,15 +115,19 @@ export default function ArInspectPage() {
     setPhase('ar')
     setScanVisible(true)
 
+    // 讓 body 背景透明，否則會遮住 AR.js 的相機 canvas
+    document.body.style.background = 'transparent'
+    document.documentElement.style.background = 'transparent'
+
     // 動態建立 <a-scene> 並附加到 body（不走 React vdom）
     const scene = document.createElement('a-scene')
     scene.id = 'ar-scene-dynamic'
-    scene.setAttribute('embedded', '')
+    // 不加 embedded，讓 A-Frame 自行接管 fullscreen canvas（解決 canvas 尺寸問題）
     scene.setAttribute('arjs',
       'sourceType:webcam; detectionMode:mono_and_matrix; matrixCodeType:3x3; debugUIEnabled:false;')
     scene.setAttribute('vr-mode-ui', 'enabled:false')
-    scene.setAttribute('renderer', 'logarithmicDepthBuffer:true; precision:medium;')
-    scene.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;'
+    scene.setAttribute('renderer', 'logarithmicDepthBuffer:true; precision:medium; alpha:true;')
+    scene.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1;'
 
     const camera = document.createElement('a-entity')
     camera.setAttribute('camera', '')

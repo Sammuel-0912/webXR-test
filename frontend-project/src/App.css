@@ -478,10 +478,12 @@ tbody td {
    AR 點檢頁（ArInspectPage）
 ════════════════════════════════════════════ */
 .ar-page {
-  background: #0d1117;
+  /* AR 模式時必須透明，否則會遮住 A-Frame canvas 的相機畫面 */
+  background: transparent;
   min-height: 100vh;
   color: #fff;
-  overflow: hidden;
+  /* overflow:hidden 會阻擋 fixed 子元素，改為 visible */
+  overflow: visible;
   font-family: 'Segoe UI', sans-serif;
 }
 
