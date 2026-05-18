@@ -224,4 +224,13 @@ export default function DashboardPage() {
             />
             <button className="btn btn-secondary" onClick={fetchData}>篩選</button>
             <button className="btn btn-secondary" onClick={() => {
-              setFilterMarker('');
+              setFilterMarker('');              setFilterStart(''); setFilterEnd('')
+            }}>清除</button>
+          </div>
+
+          <ResultsTable results={results} onDelete={handleDelete} />
+        </section>
+      </main>
+    </div>
+  )
+}
