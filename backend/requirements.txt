@@ -1,6 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 pydantic
 pandas
 openpyxl
 Pillow
+python-multipart

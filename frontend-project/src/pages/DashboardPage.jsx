@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const BACKEND = 'http://localhost:8000'
+const BACKEND = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000').replace(/\/$/, '')
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function okRateClass(rate) {

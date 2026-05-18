@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { QRCodeCanvas } from 'qrcode.react'
 
-// ── 網路設定（從 hostname 推斷預設值）─────────────────────────────
+// ── 網路設定（從 env var 或 hostname 推斷預設值）────────────────
+// VITE_BACKEND_URL 在 Zeabur 等雲端環境由環境變數注入（build time）
+// 本地開發時 fallback 到同一 hostname:8000
 function guessUrls() {
-  const h    = window.location.hostname   // 'localhost' or '192.168.x.x'
-  const port = window.location.port || '5173'
+  const h     = window.location.hostname
+  const port  = window.location.port || '5173'
   const proto = window.location.protocol
+  const envBackend = import.meta.env.VITE_BACKEND_URL
   return {
-    frontend: `${proto}//${h}:${port}`,
-    backend:  `http://${h}:8000`,
+    frontend: `${proto}//${h}${port ? ':' + port : ''}`,
+    backend:  (envBackend || `http://${h}:8000`).replace(/\/$/, ''),
   }
 }
 

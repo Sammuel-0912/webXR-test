@@ -185,15 +185,12 @@
 <script>
 // ── URL 參數 ──────────────────────────────────────────────────────
 const _p      = new URLSearchParams(window.location.search)
-const BACKEND = (_p.get('backend') || 'http://localhost:8000').replace(/\/$/, '')
+const BACKEND = (_p.get('backend') || '__VITE_BACKEND_URL__').replace(/\/$/, '')
 const urlMarkerId = _p.get('marker_id')
 const qrMode      = urlMarkerId !== null
 
 // Back 按鈕
-document.getElementById('back-btn').onclick = () => {
-  const o = new URL(BACKEND)
-  window.location.href = `${o.protocol}//${o.hostname}:5173/dashboard`
-}
+document.getElementById('back-btn').onclick = () => { window.location.href = '/dashboard' }
 
 // ── 狀態 ──────────────────────────────────────────────────────────
 let currentMarkerId = null
