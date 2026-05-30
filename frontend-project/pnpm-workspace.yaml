@@ -1,0 +1,5 @@
+# A-Frame 1.3.0 透過 git-repository 解析部分相依（super-three / debug 等）。
+# pnpm 11 預設 blockExoticSubdeps 會擋下 git 來源的 subdep 而無法安裝。
+# 我們只取用 aframe / ar.js 的「預建檔」（以 ?url 載入），不依賴其原始碼建置，故放行。
+# 此設定需納入版控，部署（Zeabur, pnpm）安裝時亦套用。
+blockExoticSubdeps: false

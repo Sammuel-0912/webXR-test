@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 
-const MARKER_COLORS = [
-  '#22c55e','#3b82f6','#f59e0b','#a855f7',
-  '#ef4444','#06b6d4','#84cc16','#f97316',
-  '#ec4899','#14b8a6','#eab308','#8b5cf6',
-]
+// 以 ?url 取得 npm 套件預建檔的 URL：Vite 會把檔案原樣複製到 dist/assets 並加 hash，
+// 不經 bundler 解析。AR.js 的預建檔是依賴全域 AFRAME 的 IIFE，無法被當成 ESM 直接 import，
+// 故用 ?url + classic <script> 注入。由自家伺服器供應、不依賴 CDN，部署時檔案必定存在。
+import aframeUrl from 'aframe/dist/aframe-master.min.js?url'
+import arjsUrl   from '@ar-js-org/ar.js/aframe/build/aframe-ar.js?url'
 
-// 動態載入 script tag（已存在則跳過）
+// 注入 classic <script>（已存在則跳過）
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) { resolve(); return }
@@ -17,6 +17,13 @@ function loadScript(src) {
     document.head.appendChild(s)
   })
 }
+
+const MARKER_COLORS = [
+  '#22c55e','#3b82f6','#f59e0b','#a855f7',
+  '#ef4444','#06b6d4','#84cc16','#f97316',
+  '#ec4899','#14b8a6','#eab308','#8b5cf6',
+]
+
 
 export default function ArInspectPage() {
   const [searchParams] = useSearchParams()
@@ -48,11 +55,10 @@ export default function ArInspectPage() {
   const submitting   = useRef(false)
 
   // ── 載入 A-Frame + AR.js（背景進行，不阻塞 UI）────────────────
-  // 預建檔置於 public/vendor/（由自家伺服器供應，不依賴 CDN，弱網也能快速載入）。
-  // 版本：aframe 1.3.0、@ar-js-org/ar.js 3.4.5（以 npm pack 取出官方預建檔）。
+  // 順序重要：aframe 必須先註冊全域 AFRAME，ar.js 才能掛上 arjs 系統與 a-marker。
   useEffect(() => {
-    loadScript('/vendor/aframe-master.min.js')
-      .then(() => loadScript('/vendor/aframe-ar.js'))
+    loadScript(aframeUrl)
+      .then(() => loadScript(arjsUrl))
       .then(() => setScriptsReady(true))
       .catch(e => console.error('AR 套件載入失敗:', e))
   }, [])
