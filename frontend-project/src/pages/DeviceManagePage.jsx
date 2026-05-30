@@ -1,57 +1,42 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { QRCodeCanvas } from 'qrcode.react'
 import ThemeToggle from '../components/ThemeToggle'
 
-// ── 網路設定（從 env var 或 hostname 推斷預設值）────────────────
-function guessUrls() {
-  const h     = window.location.hostname
-  const port  = window.location.port || '5173'
-  const proto = window.location.protocol
+// ── 後端連線設定（從 env var 或 hostname 推斷預設值）────────────────
+function guessBackend() {
+  const h = window.location.hostname
   const envBackend = import.meta.env.VITE_BACKEND_URL
-  return {
-    frontend: `${proto}//${h}${port ? ':' + port : ''}`,
-    backend:  (envBackend || `http://${h}:8000`).replace(/\/$/, ''),
-  }
+  return (envBackend || `http://${h}:8000`).replace(/\/$/, '')
 }
 
-const DEFAULTS = guessUrls()
+const DEFAULT_BACKEND = guessBackend()
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function isLocalhost(url) {
   return /localhost|127\.0\.0\.1/.test(url)
 }
 
-// ── Network Config Card ──────────────────────────────────────────────
-function NetworkConfig({ frontendUrl, backendUrl, onChange }) {
-  const warn = isLocalhost(frontendUrl) || isLocalhost(backendUrl)
+// ── Backend Config Card ──────────────────────────────────────────────
+function NetworkConfig({ backendUrl, onChange }) {
+  const warn = isLocalhost(backendUrl)
   return (
     <div className="card mb-4">
       <div className="card-body">
-        <h2 className="text-secondary text-uppercase small fw-bold mb-3">🌐 網路設定（QR Code 連結用）</h2>
+        <h2 className="text-secondary text-uppercase small fw-bold mb-3">🌐 後端 API 連線設定</h2>
         {warn && (
           <div className="alert alert-warning small" role="alert">
-            ⚠ 偵測到 <code>localhost</code>，手機掃描後將無法連線。
-            請將下方網址改為電腦的區域 IP（例如 <strong>192.168.1.100</strong>）。
+            ⚠ 偵測到 <code>localhost</code>，其他裝置將無法連線。
+            請改為電腦的區域 IP（例如 <strong>192.168.1.100</strong>）。
             <br />可在電腦終端機輸入 <code>ipconfig</code>（Windows）或 <code>ip addr</code>（Linux）查詢。
           </div>
         )}
         <div className="row g-2">
           <div className="col-12 col-md-6">
-            <label className="form-label small text-secondary mb-1">前端網址（含 port）</label>
-            <input
-              className="form-control form-control-sm font-monospace"
-              value={frontendUrl}
-              onChange={e => onChange('frontend', e.target.value)}
-              placeholder="http://192.168.1.100:5173"
-            />
-          </div>
-          <div className="col-12 col-md-6">
             <label className="form-label small text-secondary mb-1">後端 API 網址</label>
             <input
               className="form-control form-control-sm font-monospace"
               value={backendUrl}
-              onChange={e => onChange('backend', e.target.value)}
+              onChange={e => onChange(e.target.value)}
               placeholder="http://192.168.1.100:8000"
             />
           </div>
@@ -70,10 +55,7 @@ function markerSrc(markerId) {
     : null
 }
 
-function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImageUpload }) {
-  // URL QR：手機掃描後直接開啟該設備的點檢頁（「掃碼模式」捷徑，與 AR 實體標記不同）
-  const qrValue = `${frontendUrl}/ar-inspect?marker_id=${device.marker_id}&backend=${encodeURIComponent(backendUrl)}`
-  const qrRef   = useRef(null)
+function DeviceCard({ device, backendUrl, onEdit, onDelete, onImageUpload }) {
   const arMarker = markerSrc(device.marker_id)
 
   function downloadMarker() {
@@ -85,8 +67,6 @@ function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImage
   }
 
   function printCard() {
-    const canvas = qrRef.current?.querySelector('canvas')
-    const qrData = canvas ? canvas.toDataURL() : ''
     const markerUrl = arMarker ? window.location.origin + arMarker : ''
     const win    = window.open('', '_blank')
     win.document.write(`<!DOCTYPE html><html><head>
@@ -100,8 +80,6 @@ function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImage
         .marker{text-align:center;margin:14px 0}
         .marker img{width:200px;height:200px;image-rendering:pixelated;border:1px solid #ccc}
         .label{font-size:.7rem;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
-        .qr{text-align:center;margin:14px 0}
-        .qr img{width:120px;height:120px}
         .instruction{background:#f5f5f5;border-radius:8px;padding:10px;font-size:.8rem;white-space:pre-wrap;margin-top:12px}
         .img-preview{text-align:center;margin-top:10px}
         .img-preview img{max-width:100%;border-radius:6px}
@@ -115,7 +93,6 @@ function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImage
         ${markerUrl
           ? `<div class="marker"><img src="${markerUrl}" alt="AR Marker"/><div class="label">AR 標記 · 貼於設備供相機掃描</div></div>`
           : `<div class="label" style="text-align:center;color:#c00">Marker ID ${device.marker_id} 超出 3×3 範圍（0–63）</div>`}
-        <div class="qr"><img src="${qrData}" alt="QR Code"/><div class="label">或手機掃此碼直接點檢</div></div>
         ${device.image_url ? `<div class="img-preview"><img src="${backendUrl}${device.image_url}" alt="作業圖"/></div>` : ''}
         ${device.work_instruction ? `<div class="instruction">${device.work_instruction}</div>` : ''}
         <div class="footer">Marker ID: ${device.marker_id}</div>
@@ -154,11 +131,6 @@ function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImage
               )}
               <div className="text-body-tertiary mt-1" style={{ fontSize: '0.65rem' }}>AR 標記</div>
             </div>
-          </div>
-
-          {/* 隱藏的 URL QR canvas：僅供「列印卡片」取出掃碼捷徑用 */}
-          <div ref={qrRef} className="d-none">
-            <QRCodeCanvas value={qrValue} size={120} bgColor="#fff" fgColor="#111" />
           </div>
 
           {device.image_url && (
@@ -316,12 +288,10 @@ export default function DeviceManagePage() {
   const [error,       setError]       = useState(null)
   const [modalDevice, setModalDevice] = useState(undefined)
   const [toast,       setToast]       = useState(null)
-  const [frontendUrl, setFrontendUrl] = useState(DEFAULTS.frontend)
-  const [backendUrl,  setBackendUrl]  = useState(DEFAULTS.backend)
+  const [backendUrl,  setBackendUrl]  = useState(DEFAULT_BACKEND)
 
-  function handleUrlChange(key, val) {
-    if (key === 'frontend') setFrontendUrl(val.trim())
-    else                    setBackendUrl(val.trim())
+  function handleUrlChange(val) {
+    setBackendUrl(val.trim())
   }
 
   async function fetchDevices() {
@@ -395,12 +365,12 @@ export default function DeviceManagePage() {
       )}
 
       <main className="flex-grow-1 container-fluid px-3 px-md-4 py-4">
-        <NetworkConfig frontendUrl={frontendUrl} backendUrl={backendUrl} onChange={handleUrlChange} />
+        <NetworkConfig backendUrl={backendUrl} onChange={handleUrlChange} />
 
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
           {devices.map(d => (
             <DeviceCard key={d.marker_id} device={d}
-              frontendUrl={frontendUrl} backendUrl={backendUrl}
+              backendUrl={backendUrl}
               onEdit={dev => setModalDevice(dev)}
               onDelete={handleDelete}
               onImageUpload={handleImageUpload}

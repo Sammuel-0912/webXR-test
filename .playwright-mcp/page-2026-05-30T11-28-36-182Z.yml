@@ -1,0 +1,14 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: 📡 AR 點檢系統
+    - button "← 儀表板" [ref=e6] [cursor=pointer]
+  - generic [ref=e7]:
+    - status [ref=e8]:
+      - generic [ref=e9]: 載入中…
+    - generic [ref=e10]: 正在載入設備清單…
+  - generic [ref=e11]:
+    - generic [ref=e13]: 偵測設備
+    - generic [ref=e14]: —
+    - generic [ref=e15]:
+      - button "✔ 正常 OK" [ref=e16] [cursor=pointer]
+      - button "⚠ 異常 WARN" [ref=e17] [cursor=pointer]

@@ -1,16 +1,47 @@
-# React + Vite
+# 前端 — AR 設備點檢系統
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite 8 + Bootstrap 5.3 的單頁應用（SPA）。完整專案說明見 [根目錄 README](../README.md)。
 
-Currently, two official plugins are available:
+## 開發
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+cp .env.example .env   # 視需要填入後端網址
+npm run dev            # http://localhost:5173
+```
 
-## React Compiler
+| 指令 | 說明 |
+|---|---|
+| `npm run dev` | 開發伺服器（HMR） |
+| `npm run build` | 打包到 `dist/` |
+| `npm run preview` | 預覽打包結果 |
+| `npm run lint` | ESLint |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 環境變數
 
-## Expanding the ESLint configuration
+於本目錄的 `.env`（可由 `.env.example` 複製）設定：
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+VITE_BACKEND_URL=http://192.168.1.100:8000
+```
+
+build 時注入；留空時自動 fallback 至「目前 hostname:8000」。
+
+## 頁面
+
+| 路由 | 檔案 | 說明 |
+|---|---|---|
+| `/dashboard` | [src/pages/DashboardPage.jsx](src/pages/DashboardPage.jsx) | 良率總覽、紀錄查詢、報表匯出 |
+| `/devices` | [src/pages/DeviceManagePage.jsx](src/pages/DeviceManagePage.jsx) | 設備 CRUD、AR Marker、列印點檢卡 |
+| `/ar-inspect` | [src/pages/ArInspectPage.jsx](src/pages/ArInspectPage.jsx) | A-Frame + AR.js AR 點檢 |
+
+## 樣式架構（OOCSS）
+
+- Bootstrap utility 優先；版面、卡片、表格、表單、Modal 皆用內建 class。
+- [src/index.css](src/index.css)：主題 tokens（深色覆寫 Bootstrap 變數）。
+- [src/App.css](src/App.css)：Bootstrap 沒有的自訂物件（AR 疊層、bottom sheet、狀態徽章等），結構與皮膚分離。
+- 主題切換見 [src/components/ThemeToggle.jsx](src/components/ThemeToggle.jsx)。
+
+## AR Marker
+
+`public/markers/3x3/0.png`–`63.png` 為 AR.js 3×3 barcode marker，對應設備 `marker_id`。詳見根目錄 README。

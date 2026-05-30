@@ -48,9 +48,11 @@ export default function ArInspectPage() {
   const submitting   = useRef(false)
 
   // ── 載入 A-Frame + AR.js（背景進行，不阻塞 UI）────────────────
+  // 預建檔置於 public/vendor/（由自家伺服器供應，不依賴 CDN，弱網也能快速載入）。
+  // 版本：aframe 1.3.0、@ar-js-org/ar.js 3.4.5（以 npm pack 取出官方預建檔）。
   useEffect(() => {
-    loadScript('https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe-master.min.js')
-      .then(() => loadScript('https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar.js'))
+    loadScript('/vendor/aframe-master.min.js')
+      .then(() => loadScript('/vendor/aframe-ar.js'))
       .then(() => setScriptsReady(true))
       .catch(e => console.error('AR 套件載入失敗:', e))
   }, [])
