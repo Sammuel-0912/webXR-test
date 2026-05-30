@@ -1,111 +1,70 @@
+/* ════════════════════════════════════════════════════════════
+   主題 tokens（OOCSS：此檔只負責「樣式/skin」變數，不含結構）
+   - 深色為主，覆寫 Bootstrap 5.3 的 data-bs-theme 變數成 GitHub 風格
+   - 亮色沿用 Bootstrap 預設，僅微調
+   - 自訂強調色（良率/狀態）以變數提供，兩主題各自定義
+   ════════════════════════════════════════════════════════════ */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* 共用語意色（亮色預設值） */
+  --c-ok: #1a7f37;
+  --c-warn: #cf222e;
+  --c-mid: #9a6700;
+  --c-accent: #0969da;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* 狀態徽章（subtle）*/
+  --c-ok-bg: #dafbe1;
+  --c-ok-fg: #1a7f37;
+  --c-warn-bg: #ffebe9;
+  --c-warn-fg: #cf222e;
+}
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+/* ── 深色主題：把 Bootstrap 變數改成 GitHub 深色面板 ── */
+[data-bs-theme='dark'] {
+  --bs-body-bg: #0d1117;
+  --bs-body-color: #e6edf3;
+  --bs-emphasis-color: #f0f6fc;
+  --bs-secondary-color: #8b949e;
+  --bs-border-color: #30363d;
+  --bs-border-color-translucent: #30363d;
+
+  /* 卡片 / header / 次層背景 */
+  --bs-tertiary-bg: #161b22;
+  --bs-secondary-bg: #1c2128;
+
+  /* 連結 / 焦點主色 */
+  --bs-primary: #1f6feb;
+  --bs-primary-rgb: 31, 111, 235;
+  --bs-link-color: #58a6ff;
+  --bs-link-hover-color: #79c0ff;
+
+  /* 自訂語意色（深色） */
+  --c-ok: #3fb950;
+  --c-warn: #f85149;
+  --c-mid: #d29922;
+  --c-accent: #58a6ff;
+
+  --c-ok-bg: #0d4429;
+  --c-ok-fg: #3fb950;
+  --c-warn-bg: #4c1919;
+  --c-warn-fg: #f85149;
+}
+
+/* ── 全域基底 ── */
+body {
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+/* 表單控制項在深色面板上的底色（讓 input/select 與卡片有層次） */
+[data-bs-theme='dark'] .form-control,
+[data-bs-theme='dark'] .form-select {
+  background-color: #0d1117;
+  border-color: #30363d;
 }
-
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+[data-bs-theme='dark'] .form-control:focus,
+[data-bs-theme='dark'] .form-select:focus {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
 }

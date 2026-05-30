@@ -5,3 +5,6 @@
 *.jpg
 *.webp
 
+# AR.js 3x3 barcode marker 圖（功能必需，需納入版控，覆蓋上面的 *.png）
+!frontend-project/public/markers/**/*.png
+

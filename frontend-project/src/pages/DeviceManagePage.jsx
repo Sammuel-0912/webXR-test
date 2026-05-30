@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
+import ThemeToggle from '../components/ThemeToggle'
 
 // ── 網路設定（從 env var 或 hostname 推斷預設值）────────────────
-// VITE_BACKEND_URL 在 Zeabur 等雲端環境由環境變數注入（build time）
-// 本地開發時 fallback 到同一 hostname:8000
 function guessUrls() {
   const h     = window.location.hostname
   const port  = window.location.port || '5173'
@@ -26,48 +26,68 @@ function isLocalhost(url) {
 function NetworkConfig({ frontendUrl, backendUrl, onChange }) {
   const warn = isLocalhost(frontendUrl) || isLocalhost(backendUrl)
   return (
-    <div className="network-config-card">
-      <div className="network-config-title">🌐 網路設定（QR Code 連結用）</div>
-      {warn && (
-        <div className="network-warn">
-          ⚠ 偵測到 <code>localhost</code>，手機掃描後將無法連線。
-          請將下方網址改為電腦的區域 IP（例如 <strong>192.168.1.100</strong>）。
-          <br />可在電腦終端機輸入 <code>ipconfig</code>（Windows）或 <code>ip addr</code>（Linux）查詢。
+    <div className="card mb-4">
+      <div className="card-body">
+        <h2 className="text-secondary text-uppercase small fw-bold mb-3">🌐 網路設定（QR Code 連結用）</h2>
+        {warn && (
+          <div className="alert alert-warning small" role="alert">
+            ⚠ 偵測到 <code>localhost</code>，手機掃描後將無法連線。
+            請將下方網址改為電腦的區域 IP（例如 <strong>192.168.1.100</strong>）。
+            <br />可在電腦終端機輸入 <code>ipconfig</code>（Windows）或 <code>ip addr</code>（Linux）查詢。
+          </div>
+        )}
+        <div className="row g-2">
+          <div className="col-12 col-md-6">
+            <label className="form-label small text-secondary mb-1">前端網址（含 port）</label>
+            <input
+              className="form-control form-control-sm font-monospace"
+              value={frontendUrl}
+              onChange={e => onChange('frontend', e.target.value)}
+              placeholder="http://192.168.1.100:5173"
+            />
+          </div>
+          <div className="col-12 col-md-6">
+            <label className="form-label small text-secondary mb-1">後端 API 網址</label>
+            <input
+              className="form-control form-control-sm font-monospace"
+              value={backendUrl}
+              onChange={e => onChange('backend', e.target.value)}
+              placeholder="http://192.168.1.100:8000"
+            />
+          </div>
         </div>
-      )}
-      <div className="network-row">
-        <label>前端網址（含 port）</label>
-        <input value={frontendUrl}
-          onChange={e => onChange('frontend', e.target.value)}
-          placeholder="http://192.168.1.100:5173" />
-      </div>
-      <div className="network-row">
-        <label>後端 API 網址</label>
-        <input value={backendUrl}
-          onChange={e => onChange('backend', e.target.value)}
-          placeholder="http://192.168.1.100:8000" />
       </div>
     </div>
   )
 }
 
 // ── Device Card ──────────────────────────────────────────────────────
+// AR.js 3x3 barcode marker：值 0-63，圖檔在 public/markers/3x3/{id}.png
+// 這才是相機在 AR 模式實際偵測的實體標記（matrixCodeType:3x3）
+function markerSrc(markerId) {
+  return Number.isInteger(markerId) && markerId >= 0 && markerId <= 63
+    ? `/markers/3x3/${markerId}.png`
+    : null
+}
+
 function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImageUpload }) {
+  // URL QR：手機掃描後直接開啟該設備的點檢頁（「掃碼模式」捷徑，與 AR 實體標記不同）
   const qrValue = `${frontendUrl}/ar-inspect?marker_id=${device.marker_id}&backend=${encodeURIComponent(backendUrl)}`
   const qrRef   = useRef(null)
+  const arMarker = markerSrc(device.marker_id)
 
-  function downloadQR() {
-    const canvas = qrRef.current?.querySelector('canvas')
-    if (!canvas) return
+  function downloadMarker() {
+    if (!arMarker) return
     const link = document.createElement('a')
-    link.download = `device_${device.marker_id}_qr.png`
-    link.href = canvas.toDataURL()
+    link.download = `device_${device.marker_id}_ar_marker.png`
+    link.href = arMarker
     link.click()
   }
 
   function printCard() {
     const canvas = qrRef.current?.querySelector('canvas')
     const qrData = canvas ? canvas.toDataURL() : ''
+    const markerUrl = arMarker ? window.location.origin + arMarker : ''
     const win    = window.open('', '_blank')
     win.document.write(`<!DOCTYPE html><html><head>
       <meta charset="UTF-8"/>
@@ -77,8 +97,11 @@ function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImage
         .card{border:2px solid #333;border-radius:12px;padding:20px;max-width:340px;margin:auto}
         h2{margin:0 0 4px;font-size:1.2rem}
         .desc{color:#555;font-size:.85rem;margin-bottom:12px}
-        .qr{text-align:center;margin:12px 0}
-        .qr img{width:180px;height:180px}
+        .marker{text-align:center;margin:14px 0}
+        .marker img{width:200px;height:200px;image-rendering:pixelated;border:1px solid #ccc}
+        .label{font-size:.7rem;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+        .qr{text-align:center;margin:14px 0}
+        .qr img{width:120px;height:120px}
         .instruction{background:#f5f5f5;border-radius:8px;padding:10px;font-size:.8rem;white-space:pre-wrap;margin-top:12px}
         .img-preview{text-align:center;margin-top:10px}
         .img-preview img{max-width:100%;border-radius:6px}
@@ -89,10 +112,13 @@ function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImage
       <div class="card">
         <h2>${device.name}</h2>
         <div class="desc">${device.description || ''}</div>
-        <div class="qr"><img src="${qrData}" alt="QR Code"/></div>
+        ${markerUrl
+          ? `<div class="marker"><img src="${markerUrl}" alt="AR Marker"/><div class="label">AR 標記 · 貼於設備供相機掃描</div></div>`
+          : `<div class="label" style="text-align:center;color:#c00">Marker ID ${device.marker_id} 超出 3×3 範圍（0–63）</div>`}
+        <div class="qr"><img src="${qrData}" alt="QR Code"/><div class="label">或手機掃此碼直接點檢</div></div>
         ${device.image_url ? `<div class="img-preview"><img src="${backendUrl}${device.image_url}" alt="作業圖"/></div>` : ''}
         ${device.work_instruction ? `<div class="instruction">${device.work_instruction}</div>` : ''}
-        <div class="footer">Marker ID: ${device.marker_id} · 掃描 QR Code 開始點檢</div>
+        <div class="footer">Marker ID: ${device.marker_id}</div>
       </div>
     </body></html>`)
     win.document.close()
@@ -101,38 +127,73 @@ function DeviceCard({ device, frontendUrl, backendUrl, onEdit, onDelete, onImage
   }
 
   return (
-    <div className="device-card">
-      <div className="device-card-header">
-        <div>
-          <div className="device-card-name">{device.name}</div>
-          <div className="device-card-desc">{device.description || '—'}</div>
-          <div className="device-card-id">Marker ID: {device.marker_id}</div>
-        </div>
-        <div ref={qrRef} className="device-qr" title={qrValue}>
-          <QRCodeCanvas value={qrValue} size={88} bgColor="#fff" fgColor="#111" />
-        </div>
-      </div>
+    <div className="col">
+      <div className="card h-100">
+        <div className="card-body d-flex flex-column gap-2">
+          <div className="d-flex justify-content-between align-items-start gap-3">
+            <div className="overflow-hidden">
+              <div className="fw-bold text-truncate">{device.name}</div>
+              <div className="text-secondary small text-truncate">{device.description || '—'}</div>
+              <div className="text-body-tertiary" style={{ fontSize: '0.7rem' }}>Marker ID: {device.marker_id}</div>
+            </div>
+            <div className="text-center flex-shrink-0">
+              {arMarker ? (
+                <div className="qr-light" title={`AR.js 3×3 barcode marker #${device.marker_id}`}>
+                  <img
+                    src={arMarker}
+                    alt={`AR Marker ${device.marker_id}`}
+                    width={88} height={88}
+                    style={{ imageRendering: 'pixelated', display: 'block' }}
+                  />
+                </div>
+              ) : (
+                <div className="qr-light text-danger small d-flex align-items-center justify-content-center"
+                  style={{ width: 100, height: 100 }}>
+                  超出 0–63
+                </div>
+              )}
+              <div className="text-body-tertiary mt-1" style={{ fontSize: '0.65rem' }}>AR 標記</div>
+            </div>
+          </div>
 
-      {device.image_url && (
-        <div className="device-image-wrap">
-          <img src={`${backendUrl}${device.image_url}`} alt="作業指引圖" className="device-image" />
+          {/* 隱藏的 URL QR canvas：僅供「列印卡片」取出掃碼捷徑用 */}
+          <div ref={qrRef} className="d-none">
+            <QRCodeCanvas value={qrValue} size={120} bgColor="#fff" fgColor="#111" />
+          </div>
+
+          {device.image_url && (
+            <div className="text-center">
+              <img
+                src={`${backendUrl}${device.image_url}`}
+                alt="作業指引圖"
+                className="img-fluid rounded"
+                style={{ maxHeight: 160, objectFit: 'cover' }}
+              />
+            </div>
+          )}
+
+          {device.work_instruction && (
+            <pre className="instruction-block bg-body-tertiary border rounded p-2 small text-secondary mb-0">
+              {device.work_instruction}
+            </pre>
+          )}
+
+          <div className="d-flex flex-wrap gap-2 border-top pt-2 mt-auto">
+            <button className="btn btn-sm btn-outline-secondary" onClick={downloadMarker} disabled={!arMarker}>
+              ⬇ 標記
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={printCard}>🖨 列印卡片</button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={() => onEdit(device)}>✏ 編輯</button>
+            <label className="btn btn-sm btn-outline-secondary mb-0">
+              🖼 上傳圖片
+              <input
+                type="file" accept="image/*" className="d-none"
+                onChange={e => { if (e.target.files[0]) onImageUpload(device.marker_id, e.target.files[0]) }}
+              />
+            </label>
+            <button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(device.marker_id)}>🗑</button>
+          </div>
         </div>
-      )}
-
-      {device.work_instruction && (
-        <pre className="device-instruction">{device.work_instruction}</pre>
-      )}
-
-      <div className="device-card-actions">
-        <button className="btn btn-secondary" style={{fontSize:12}} onClick={downloadQR}>⬇ QR</button>
-        <button className="btn btn-secondary" style={{fontSize:12}} onClick={printCard}>🖨 列印卡片</button>
-        <button className="btn btn-secondary" style={{fontSize:12}} onClick={() => onEdit(device)}>✏ 編輯</button>
-        <label className="btn btn-secondary" style={{fontSize:12, cursor:'pointer'}}>
-          🖼 上傳圖片
-          <input type="file" accept="image/*" style={{display:'none'}}
-            onChange={e => { if (e.target.files[0]) onImageUpload(device.marker_id, e.target.files[0]) }} />
-        </label>
-        <button className="btn btn-danger" style={{fontSize:12}} onClick={() => onDelete(device.marker_id)}>🗑</button>
       </div>
     </div>
   )
@@ -190,50 +251,66 @@ function DeviceModal({ initial, backendUrl, onSave, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal-box">
-        <div className="modal-header">
-          <h2>{isEdit ? '編輯設備' : '新增設備'}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          {!isEdit && (
-            <div className="form-row">
-              <label>Marker ID <span className="required">*</span></label>
-              <input type="number" min="0" value={form.marker_id}
-                onChange={handle('marker_id')} placeholder="0 / 1 / 2 / ..." />
-              <small className="form-hint">對應 AR 實體 Marker 編號（3×3 矩陣碼）</small>
+    <>
+      <div className="modal d-block" tabIndex="-1" role="dialog"
+        onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+        <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title h5 mb-0">{isEdit ? '編輯設備' : '新增設備'}</h2>
+              <button type="button" className="btn-close" aria-label="關閉" onClick={onClose} />
             </div>
-          )}
-          <div className="form-row">
-            <label>設備名稱 <span className="required">*</span></label>
-            <input type="text" value={form.name} onChange={handle('name')} placeholder="例：INPUT 輸入端" />
+            <div className="modal-body">
+              {!isEdit && (
+                <div className="mb-3">
+                  <label className="form-label small text-secondary">
+                    Marker ID <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="number" min="0" className="form-control"
+                    value={form.marker_id} onChange={handle('marker_id')} placeholder="0 / 1 / 2 / ..."
+                  />
+                  <div className="form-text">對應 AR 實體 Marker 編號（3×3 矩陣碼）</div>
+                </div>
+              )}
+              <div className="mb-3">
+                <label className="form-label small text-secondary">
+                  設備名稱 <span className="text-danger">*</span>
+                </label>
+                <input type="text" className="form-control" value={form.name}
+                  onChange={handle('name')} placeholder="例：INPUT 輸入端" />
+              </div>
+              <div className="mb-3">
+                <label className="form-label small text-secondary">設備描述</label>
+                <input type="text" className="form-control" value={form.description}
+                  onChange={handle('description')} placeholder="例：UPS 輸入模組" />
+              </div>
+              <div className="mb-3">
+                <label className="form-label small text-secondary">作業指引</label>
+                <textarea className="form-control" rows={5} value={form.work_instruction}
+                  onChange={handle('work_instruction')}
+                  placeholder={"1. 確認電壓正常\n2. 檢查接頭\n3. 確認指示燈"} />
+                <div className="form-text">AR 掃描時顯示在點檢面板中</div>
+              </div>
+              {error && <div className="alert alert-danger small mb-0" role="alert">{error}</div>}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline-secondary" onClick={onClose}>取消</button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? '儲存中…' : '儲存'}
+              </button>
+            </div>
           </div>
-          <div className="form-row">
-            <label>設備描述</label>
-            <input type="text" value={form.description} onChange={handle('description')} placeholder="例：UPS 輸入模組" />
-          </div>
-          <div className="form-row">
-            <label>作業指引</label>
-            <textarea rows={5} value={form.work_instruction} onChange={handle('work_instruction')}
-              placeholder={"1. 確認電壓正常\n2. 檢查接頭\n3. 確認指示燈"} />
-            <small className="form-hint">AR 掃描時顯示在點檢面板中</small>
-          </div>
-        </div>
-        {error && <div className="modal-error">{error}</div>}
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? '儲存中…' : '儲存'}
-          </button>
         </div>
       </div>
-    </div>
+      <div className="modal-backdrop fade show" />
+    </>
   )
 }
 
 // ── Main Page ────────────────────────────────────────────────────────
 export default function DeviceManagePage() {
+  const navigate = useNavigate()
   const [devices,     setDevices]     = useState([])
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(null)
@@ -290,32 +367,37 @@ export default function DeviceManagePage() {
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="spinner"></div>
-        <p>載入中…</p>
+      <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 gap-3 text-secondary">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">載入中…</span>
+        </div>
+        <p className="mb-0">載入中…</p>
       </div>
     )
   }
 
   return (
-    <div className="dashboard">
-      <header className="dash-header">
-        <div className="dash-header-left">
-          <span className="dash-logo">🔧</span>
-          <h1>設備管理</h1>
+    <div className="d-flex flex-column min-vh-100">
+      <header className="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 px-md-4 py-3 border-bottom bg-body-tertiary">
+        <div className="d-flex align-items-center gap-2">
+          <span className="fs-3">🔧</span>
+          <h1 className="h5 fw-bold mb-0 text-primary">設備管理</h1>
         </div>
-        <div className="dash-header-right">
+        <div className="d-flex flex-wrap align-items-center gap-2">
           <button className="btn btn-primary" onClick={() => setModalDevice(null)}>＋ 新增設備</button>
-          <button className="btn btn-secondary" onClick={() => window.location.href = '/dashboard'}>← 儀表板</button>
+          <button className="btn btn-outline-secondary" onClick={() => navigate('/dashboard')}>← 儀表板</button>
+          <ThemeToggle />
         </div>
       </header>
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && (
+        <div className="alert alert-danger rounded-0 mb-0" role="alert">{error}</div>
+      )}
 
-      <main className="dash-body">
+      <main className="flex-grow-1 container-fluid px-3 px-md-4 py-4">
         <NetworkConfig frontendUrl={frontendUrl} backendUrl={backendUrl} onChange={handleUrlChange} />
 
-        <div className="device-grid">
+        <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
           {devices.map(d => (
             <DeviceCard key={d.marker_id} device={d}
               frontendUrl={frontendUrl} backendUrl={backendUrl}
@@ -325,7 +407,7 @@ export default function DeviceManagePage() {
             />
           ))}
           {devices.length === 0 && !error && (
-            <p style={{ color: '#666', gridColumn: '1/-1' }}>尚無設備，請點「新增設備」</p>
+            <p className="text-secondary">尚無設備，請點「新增設備」</p>
           )}
         </div>
       </main>
@@ -340,7 +422,11 @@ export default function DeviceManagePage() {
       )}
 
       {toast && (
-        <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
+        <div className="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" style={{ zIndex: 1100 }}>
+          <div className={`toast show text-bg-${toast.type === 'error' ? 'danger' : 'success'}`} role="alert">
+            <div className="toast-body">{toast.msg}</div>
+          </div>
+        </div>
       )}
     </div>
   )

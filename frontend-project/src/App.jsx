@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import DashboardPage    from './pages/DashboardPage'
 import DeviceManagePage from './pages/DeviceManagePage'
-import './App.css'
 import ArInspectPage    from './pages/ArInspectPage' // 1. 引入新頁面
 
 export default function App() {

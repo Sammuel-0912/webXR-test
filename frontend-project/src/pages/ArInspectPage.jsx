@@ -212,42 +212,54 @@ export default function ArInspectPage() {
     <div className="ar-page">
       {/* Top bar */}
       <div className="ar-top-bar">
-        <span className="ar-title">📡 AR 點檢系統</span>
-        <button className="ar-back-btn" onClick={() => navigate('/dashboard')}>← 儀表板</button>
+        <span className="fw-semibold" style={{ letterSpacing: 1 }}>📡 AR 點檢系統</span>
+        <button
+          className="btn btn-sm btn-outline-light rounded-pill"
+          onClick={() => navigate('/dashboard')}
+        >
+          ← 儀表板
+        </button>
       </div>
 
-      {qrMode && <div className="ar-qr-banner">📱 QR Code 掃碼模式</div>}
-      {connError && <div className="ar-conn-error">{connError}</div>}
+      {qrMode && <div className="ar-banner ar-banner--info">📱 QR Code 掃碼模式</div>}
+      {connError && <div className="ar-banner ar-banner--error">{connError}</div>}
 
       {/* ── 載入中 ── */}
       {phase === 'loading' && (
-        <div className="ar-loading-overlay">
-          <div className="ld-spinner" />
+        <div className="ar-overlay text-secondary">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">載入中…</span>
+          </div>
           <div>正在載入設備清單…</div>
         </div>
       )}
 
       {/* ── Start Screen ── */}
       {phase === 'start' && (
-        <div className="ar-start-screen">
-          <div className="ar-start-icon">📡</div>
-          <div className="ar-device-list-card">
-            <div className="ar-device-list-title">已載入設備</div>
-            {devices.length === 0
-              ? <div className="ar-no-devices">（無設備資料，仍可嘗試啟動）</div>
-              : devices.map(d => (
-                  <div key={d.marker_id} className="ar-device-list-item">
-                    <span className="ar-device-dot"
-                      style={{ background: MARKER_COLORS[d.marker_id % MARKER_COLORS.length] }} />
-                    Marker {d.marker_id}：{d.name}
-                  </div>
-                ))
-            }
+        <div className="ar-overlay ar-overlay--start">
+          <div style={{ fontSize: 56 }}>📡</div>
+          <div className="card w-100" style={{ maxWidth: 360 }}>
+            <div className="card-body">
+              <div className="text-secondary text-uppercase small mb-2" style={{ letterSpacing: 1 }}>
+                已載入設備
+              </div>
+              {devices.length === 0
+                ? <div className="text-secondary small py-1">（無設備資料，仍可嘗試啟動）</div>
+                : devices.map(d => (
+                    <div key={d.marker_id}
+                      className="d-flex align-items-center gap-2 py-1 border-bottom small">
+                      <span className="dot"
+                        style={{ background: MARKER_COLORS[d.marker_id % MARKER_COLORS.length] }} />
+                      Marker {d.marker_id}：{d.name}
+                    </div>
+                  ))
+              }
+            </div>
           </div>
           <button className="ar-start-btn" onClick={startAR} disabled={!scriptsReady}>
             {scriptsReady ? '▶ 開始 AR 掃描' : '⌛ 載入 AR 套件中…'}
           </button>
-          <div className="ar-start-hint">點擊後瀏覽器會請求相機權限</div>
+          <div className="text-secondary small">點擊後瀏覽器會請求相機權限</div>
         </div>
       )}
 
@@ -269,38 +281,45 @@ export default function ArInspectPage() {
       )}
 
       {/* ── Bottom Sheet ── */}
-      <div className={`ar-bottom-sheet${sheetOpen ? ' open' : ''}`}>
-        <div className="ar-sheet-handle" />
-        <div className="ar-device-label">偵測設備</div>
-        <div className="ar-device-name">{activeDevice?.name || '—'}</div>
-        <div className="ar-device-desc">{activeDevice?.description || ''}</div>
+      <div className={`ar-sheet${sheetOpen ? ' is-open' : ''}`}>
+        <div className="ar-sheet__handle" />
+        <div className="text-uppercase small text-secondary" style={{ letterSpacing: 1 }}>偵測設備</div>
+        <div className="fs-4 fw-bold mt-1">{activeDevice?.name || '—'}</div>
+        <div className="text-secondary small mb-3">{activeDevice?.description || ''}</div>
 
         {activeDevice?.image_url && (
-          <div className="ar-device-image-wrap">
-            <img src={BACKEND + activeDevice.image_url} alt="作業圖" className="ar-device-image" />
+          <div className="text-center mb-3">
+            <img src={BACKEND + activeDevice.image_url} alt="作業圖"
+              className="img-fluid rounded" style={{ maxHeight: 180, objectFit: 'cover' }} />
           </div>
         )}
 
         {activeDevice?.work_instruction && (
-          <div className="ar-instruction-wrap">
-            <div className="ar-instruction-title">📋 作業指引</div>
-            <pre className="ar-instruction-text">{activeDevice.work_instruction}</pre>
+          <div className="mb-3">
+            <div className="text-uppercase small mb-1" style={{ color: 'var(--c-accent)', letterSpacing: 1 }}>
+              📋 作業指引
+            </div>
+            <pre className="instruction-block bg-dark border rounded p-2 small text-light">
+              {activeDevice.work_instruction}
+            </pre>
           </div>
         )}
 
-        <div className="ar-btn-row">
-          <button className="ar-judge-btn ar-btn-ok"
+        <div className="d-flex gap-3 mb-3">
+          <button className="ar-judge-btn ar-judge-btn--ok"
             disabled={btnsDisabled} onClick={() => submitInspection('ok')}>
             ✔ 正常 OK
           </button>
-          <button className="ar-judge-btn ar-btn-warn"
+          <button className="ar-judge-btn ar-judge-btn--warn"
             disabled={btnsDisabled} onClick={() => submitInspection('warn')}>
             ⚠ 異常 WARN
           </button>
         </div>
 
         {feedback && (
-          <div className={`ar-feedback ar-feedback-${feedback.type}`}>{feedback.msg}</div>
+          <div className={`alert alert-${feedback.type === 'success' ? 'success' : 'danger'} text-center py-2 mb-0`}>
+            {feedback.msg}
+          </div>
         )}
       </div>
     </div>

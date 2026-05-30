@@ -1,633 +1,239 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ════════════════════════════════════════════════════════════
+   OOCSS 自訂物件層
+   ------------------------------------------------------------
+   原則（Bootstrap utility 優先）：
+   - 版面、間距、grid、card、btn、table、modal、form、badge 等
+     一律用 Bootstrap 內建 class / utilities，不在此重造。
+   - 此檔只留 Bootstrap「沒有提供」的東西：
+       1) 結構物件（.o-*）：固定定位的 AR 疊層、bottom sheet…
+       2) 樣式皮膚（--modifier）：以語意色變數套色，可重複套用
+   - 結構（layout）與皮膚（skin）分離，皮膚一律吃 index.css 的色彩變數。
+   ════════════════════════════════════════════════════════════ */
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #0d1117;
-  color: #e6edf3;
-  min-height: 100vh;
-}
+/* ════════ 共用物件 ════════ */
 
-/* ── Dashboard Layout ── */
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.dash-header {
-  background: #161b22;
-  border-bottom: 1px solid #30363d;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.dash-header h1 {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #58a6ff;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dash-body {
-  flex: 1;
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* ── Buttons ── */
-.btn {
+/* 狀態徽章（soft）— 結構 .badge-soft，皮膚 --ok / --warn */
+.badge-soft {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  gap: 4px;
+  padding: 0.2em 0.6em;
+  border-radius: 99px;
+  font-size: 0.78rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
+  line-height: 1.4;
 }
-.btn:hover { opacity: 0.85; }
-.btn:active { opacity: 0.7; }
-
-.btn-primary { background: #238636; color: #fff; }
-.btn-secondary { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
-.btn-danger { background: #da3633; color: #fff; }
-.btn-inspect {
-  background: #1f6feb;
-  color: #fff;
-  font-size: 1.1rem;
-  padding: 14px 28px;
+.badge-soft--ok {
+  background: var(--c-ok-bg);
+  color: var(--c-ok-fg);
+}
+.badge-soft--warn {
+  background: var(--c-warn-bg);
+  color: var(--c-warn-fg);
 }
 
-/* ── Stat Cards ── */
-.stat-section h2,
-.records-section h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #8b949e;
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  padding: 20px;
+/* 良率卡頂部色條（結構 .stat-accent，皮膚 --high/--mid/--low）*/
+.stat-accent {
   position: relative;
   overflow: hidden;
 }
-
-.stat-card::before {
+.stat-accent::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
+  inset: 0 0 auto 0;
   height: 4px;
 }
-.stat-card.ok-high::before { background: #3fb950; }
-.stat-card.ok-mid::before  { background: #d29922; }
-.stat-card.ok-low::before  { background: #f85149; }
-
-.stat-card .device-name {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-  color: #e6edf3;
-}
-.stat-card .device-desc {
-  font-size: 0.78rem;
-  color: #8b949e;
-  margin-bottom: 16px;
-}
+.stat-accent--high::before { background: var(--c-ok); }
+.stat-accent--mid::before  { background: var(--c-mid); }
+.stat-accent--low::before  { background: var(--c-warn); }
 
 .stat-rate {
   font-size: 2.4rem;
   font-weight: 800;
   line-height: 1;
-  margin-bottom: 8px;
 }
-.ok-high .stat-rate { color: #3fb950; }
-.ok-mid  .stat-rate { color: #d29922; }
-.ok-low  .stat-rate { color: #f85149; }
+.stat-accent--high .stat-rate { color: var(--c-ok); }
+.stat-accent--mid  .stat-rate { color: var(--c-mid); }
+.stat-accent--low  .stat-rate { color: var(--c-warn); }
 
-.stat-row {
-  display: flex;
-  gap: 12px;
-  font-size: 0.82rem;
-  color: #8b949e;
-}
-.stat-row span { display: flex; align-items: center; gap: 4px; }
-.dot-ok   { width: 8px; height: 8px; border-radius: 50%; background: #3fb950; }
-.dot-warn { width: 8px; height: 8px; border-radius: 50%; background: #f85149; }
-
-/* ── Records Table ── */
-.records-section {
-  flex: 1;
-}
-
-.table-wrap {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.88rem;
-}
-thead tr {
-  background: #1c2128;
-  color: #8b949e;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-thead th {
-  padding: 10px 16px;
-  text-align: left;
-  font-weight: 600;
-}
-tbody tr {
-  border-top: 1px solid #21262d;
-  transition: background 0.1s;
-}
-tbody tr:hover { background: #1c2128; }
-tbody td {
-  padding: 12px 16px;
-  vertical-align: middle;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-.badge-ok   { background: #0d4429; color: #3fb950; }
-.badge-warn { background: #4c1919; color: #f85149; }
-
-.empty-state {
-  padding: 48px;
-  text-align: center;
-  color: #8b949e;
-  font-size: 0.95rem;
-}
-
-/* ── Loading / Error ── */
-.loading-screen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  color: #8b949e;
-  font-size: 1rem;
-  gap: 12px;
-}
-
-.error-banner {
-  background: #4c1919;
-  color: #f85149;
-  border: 1px solid #da3633;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 0.9rem;
-}
-
-/* ── Dash header layout ── */
-.dash-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.dash-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.dash-logo { font-size: 1.6rem; }
-
-/* ── Section title ── */
-.section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #8b949e;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 14px;
-}
-
-/* ── Filters ── */
-.filter-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-.filter-row select,
-.filter-row input {
-  background: #161b22;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-}
-.filter-row select:focus,
-.filter-row input:focus {
-  outline: none;
-  border-color: #58a6ff;
-}
-
-/* ── Spinner ── */
-.spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #30363d;
-  border-top-color: #58a6ff;
+/* 狀態小圓點 */
+.dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  animation: spin .8s linear infinite;
+  display: inline-block;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+.dot--ok   { background: var(--c-ok); }
+.dot--warn { background: var(--c-warn); }
 
-/* ── Device Management Page ── */
-.section-hint {
-  color: #666; font-size: 13px; margin-bottom: 20px; line-height: 1.6;
-}
-
-.device-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 18px;
-}
-
-.device-card {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.device-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.device-card-name { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
-.device-card-desc { font-size: 13px; color: #aaa; margin-bottom: 4px; }
-.device-card-id   { font-size: 11px; color: #555; }
-
-.device-qr {
+/* QR 永遠白底（不隨主題變） */
+.qr-light {
   background: #fff;
   padding: 6px;
   border-radius: 8px;
-  flex-shrink: 0;
 }
 
-.device-image-wrap { text-align: center; }
-.device-image {
-  max-width: 100%; max-height: 160px;
-  border-radius: 8px; object-fit: cover;
-}
-
-.device-instruction {
-  background: #0d1117;
-  border: 1px solid #30363d;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 12px;
-  line-height: 1.6;
+/* 預格式化作業指引文字塊 */
+.instruction-block {
   white-space: pre-wrap;
-  color: #8b949e;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-.device-card-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  border-top: 1px solid #21262d;
-  padding-top: 10px;
-}
-
-/* ── Modal ── */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-}
-
-.modal-box {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 16px;
-  width: 100%; max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #21262d;
-}
-.modal-header h2 { font-size: 16px; font-weight: 700; }
-.modal-close {
-  background: none; border: none; color: #888; font-size: 18px;
-  cursor: pointer; line-height: 1;
-}
-.modal-close:hover { color: #fff; }
-
-.modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
-
-.form-row { display: flex; flex-direction: column; gap: 5px; }
-.form-row label { font-size: 12px; color: #8b949e; font-weight: 600; }
-.form-row input,
-.form-row textarea {
-  background: #0d1117;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 14px;
   font-family: inherit;
-  resize: vertical;
-}
-.form-row input:focus,
-.form-row textarea:focus { outline: none; border-color: #58a6ff; }
-.form-hint { font-size: 11px; color: #555; }
-.required  { color: #f85149; }
-
-.modal-error {
-  margin: 0 20px;
-  background: #4c1919; color: #f85149;
-  border: 1px solid #da3633;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
+  margin: 0;
 }
 
-.modal-footer {
-  display: flex; justify-content: flex-end; gap: 8px;
-  padding: 14px 20px;
-  border-top: 1px solid #21262d;
-}
-
-/* ── Toast ── */
-.toast {
-  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-  z-index: 999;
-  padding: 10px 22px;
-  border-radius: 24px;
-  font-size: 14px;
-  font-weight: 600;
-  pointer-events: none;
-  animation: fade-up .25s ease;
-}
-.toast-success { background: #1a4731; color: #4ade80; border: 1px solid #22c55e44; }
-.toast-error   { background: #4c1919; color: #f87171; border: 1px solid #f8514944; }
-@keyframes fade-up { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; } }
-
-/* ── Network Config Card ── */
-.network-config-card {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  padding: 16px 18px;
-  margin-bottom: 20px;
-}
-.network-config-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #8b949e;
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-.network-warn {
-  background: rgba(245,158,11,.12);
-  border: 1px solid rgba(245,158,11,.35);
-  color: #fbbf24;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-.network-warn code {
-  background: rgba(245,158,11,.2);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 12px;
-}
-.network-warn strong { color: #fff; }
-.network-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.network-row label {
-  font-size: 12px;
-  color: #8b949e;
-  width: 140px;
-  flex-shrink: 0;
-}
-.network-row input {
-  flex: 1;
-  background: #0d1117;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-family: monospace;
-}
-.network-row input:focus { outline: none; border-color: #58a6ff; }
-
-/* ════════════════════════════════════════════
-   AR 點檢頁（ArInspectPage）
-════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   AR 點檢頁（ArInspectPage）— 全螢幕相機疊層，Bootstrap 無對應元件
+   ar-page 必須透明，否則會遮住 A-Frame / AR.js 的相機 canvas
+   ════════════════════════════════════════════════════════════ */
 .ar-page {
-  /* AR 模式時必須透明，否則會遮住 A-Frame canvas 的相機畫面 */
   background: transparent;
   min-height: 100vh;
   color: #fff;
-  /* overflow:hidden 會阻擋 fixed 子元素，改為 visible */
   overflow: visible;
-  font-family: 'Segoe UI', sans-serif;
 }
 
-/* ── Top bar ── */
+/* ── 頂部列 ── */
 .ar-top-bar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 300;
-  display: flex; align-items: center; justify-content: space-between;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 10px 16px;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
-}
-.ar-title    { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
-.ar-back-btn {
-  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-  color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
 }
 
-/* ── Banners ── */
-.ar-qr-banner {
-  position: fixed; top: 52px; left: 0; right: 0; z-index: 200;
-  background: rgba(88,166,255,.15); border-bottom: 1px solid rgba(88,166,255,.3);
-  color: #58a6ff; text-align: center; padding: 7px; font-size: 13px;
+/* ── 橫幅 ── */
+.ar-banner {
+  position: fixed;
+  top: 52px; left: 0; right: 0;
+  text-align: center;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
-.ar-conn-error {
-  position: fixed; top: 52px; left: 0; right: 0; z-index: 400;
-  background: rgba(220,38,38,.9); color: #fff;
-  padding: 10px 16px; font-size: 13px; text-align: center; line-height: 1.5;
+.ar-banner--info {
+  z-index: 200;
+  background: rgba(88, 166, 255, 0.15);
+  border-bottom: 1px solid rgba(88, 166, 255, 0.3);
+  color: #58a6ff;
+}
+.ar-banner--error {
+  z-index: 400;
+  background: rgba(220, 38, 38, 0.9);
+  color: #fff;
 }
 
-/* ── Loading overlay ── */
-.ar-loading-overlay {
-  position: fixed; inset: 0; z-index: 250;
+/* ── 全螢幕遮罩（載入 / 開始畫面）── */
+.ar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
   background: #0d1117;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 14px;
-  font-size: 14px; color: #8b949e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
 }
-
-/* ── Start Screen ── */
-.ar-start-screen {
-  position: fixed; inset: 0; z-index: 200;
-  background: #0d1117;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 20px; padding: 32px;
+.ar-overlay--start {
+  z-index: 200;
+  justify-content: flex-start;
   padding-top: 80px;
   overflow-y: auto;
 }
-.ar-start-icon { font-size: 56px; }
 
-.ar-device-list-card {
-  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-  padding: 14px 18px; width: 100%; max-width: 360px;
-}
-.ar-device-list-title {
-  font-size: 11px; color: #8b949e; text-transform: uppercase;
-  letter-spacing: 1px; margin-bottom: 10px;
-}
-.ar-device-list-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 14px;
-}
-.ar-device-list-item:last-child { border-bottom: none; }
-.ar-device-dot {
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-}
-.ar-no-devices { color: #666; font-size: 13px; padding: 4px 0; }
-
-.ar-start-btn {
-  width: 100%; max-width: 360px;
-  padding: 18px; background: #22c55e; color: #fff;
-  font-size: 18px; font-weight: 700; letter-spacing: 1px;
-  border: none; border-radius: 16px; cursor: pointer;
-  box-shadow: 0 4px 24px rgba(34,197,94,.4);
-  transition: transform .12s;
-}
-.ar-start-btn:active  { transform: scale(.97); }
-.ar-start-btn:disabled {
-  background: #374151; color: #6b7280; box-shadow: none; cursor: not-allowed;
-}
-.ar-start-hint { font-size: 13px; color: #8b949e; }
-
-/* ── AR 執行中 UI ── */
+/* ── 瞄準框 ── */
 .ar-crosshair {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 180px; height: 180px; pointer-events: none; z-index: 50;
-  transition: opacity .3s;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 180px; height: 180px;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.3s;
 }
 .ar-crosshair svg { width: 100%; height: 100%; }
 
+/* ── 掃描提示 ── */
 .ar-scan-hint {
-  position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
-  z-index: 100; background: rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
-  padding: 10px 20px; font-size: 14px; color: #ccc;
-  pointer-events: none; white-space: nowrap;
+  position: fixed;
+  bottom: 130px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  color: #ccc;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
-/* ── Bottom Sheet ── */
-.ar-bottom-sheet {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-  background: #1a1e2e; border-radius: 20px 20px 0 0;
+/* ── 底部抽屜（Bottom Sheet）── */
+.ar-sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: #1a1e2e;
+  border-radius: 20px 20px 0 0;
   padding: 16px 20px 32px;
   transform: translateY(100%);
-  transition: transform .35s cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 -4px 30px rgba(0,0,0,.6);
-  max-height: 75vh; overflow-y: auto;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.6);
+  max-height: 75vh;
+  overflow-y: auto;
 }
-.ar-bottom-sheet.open { transform: translateY(0); }
-.ar-sheet-handle {
-  width: 40px; height: 4px; background: #444; border-radius: 2px; margin: 0 auto 14px;
-}
-
-.ar-device-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-.ar-device-name  { font-size: 20px; font-weight: 700; margin: 2px 0 4px; }
-.ar-device-desc  { font-size: 13px; color: #aaa; margin-bottom: 14px; }
-
-.ar-device-image-wrap { text-align: center; margin-bottom: 14px; }
-.ar-device-image { max-width: 100%; max-height: 180px; border-radius: 8px; object-fit: cover; }
-
-.ar-instruction-wrap  { margin-bottom: 14px; }
-.ar-instruction-title {
-  font-size: 11px; color: #58a6ff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
-}
-.ar-instruction-text {
-  background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
-  padding: 10px 12px; font-size: 13px; line-height: 1.6;
-  white-space: pre-wrap; color: #c9d1d9; font-family: inherit;
+.ar-sheet.is-open { transform: translateY(0); }
+.ar-sheet__handle {
+  width: 40px; height: 4px;
+  background: #444;
+  border-radius: 2px;
+  margin: 0 auto 14px;
 }
 
-.ar-btn-row { display: flex; gap: 12px; margin-bottom: 14px; }
+/* AR 判定大按鈕（觸控友善，比 Bootstrap btn 更大）*/
 .ar-judge-btn {
-  flex: 1; padding: 15px 0; font-size: 17px; font-weight: 700;
-  border: none; border-radius: 14px; cursor: pointer; letter-spacing: 1px;
-  transition: transform .12s;
+  flex: 1;
+  padding: 15px 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  color: #fff;
+  transition: transform 0.12s;
 }
-.ar-judge-btn:active   { transform: scale(.96); }
-.ar-btn-ok   { background: #22c55e; color: #fff; box-shadow: 0 4px 18px rgba(34,197,94,.35); }
-.ar-btn-warn { background: #f59e0b; color: #fff; box-shadow: 0 4px 18px rgba(245,158,11,.35); }
-.ar-judge-btn:disabled { opacity: .45; cursor: not-allowed; }
+.ar-judge-btn:active { transform: scale(0.96); }
+.ar-judge-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ar-judge-btn--ok   { background: #22c55e; box-shadow: 0 4px 18px rgba(34, 197, 94, 0.35); }
+.ar-judge-btn--warn { background: #f59e0b; box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35); }
 
-.ar-feedback {
-  border-radius: 10px; padding: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 600;
+/* AR 開始大按鈕 */
+.ar-start-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: 18px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(34, 197, 94, 0.4);
+  transition: transform 0.12s;
 }
-.ar-feedback-success { background: rgba(34,197,94,.18); color: #4ade80; }
-.ar-feedback-error   { background: rgba(239,68,68,.18);  color: #f87171; }
+.ar-start-btn:active { transform: scale(0.97); }
+.ar-start-btn:disabled {
+  background: #374151;
+  color: #6b7280;
+  box-shadow: none;
+  cursor: not-allowed;
+}
