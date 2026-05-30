@@ -21,8 +21,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Persistent data directory ---
+# DB 與上傳圖片都放在 DATA_DIR，方便在 Zeabur 掛載「單一 volume」，避免重部署後資料遺失。
+# 預設 "data"（相對於後端工作目錄，部署時即容器內的 /app/data）；
+# 可用環境變數 DATA_DIR 覆寫成 volume 掛載的絕對路徑。
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DB_PATH = os.path.join(DATA_DIR, "inspection.db")
+
 # --- Uploads directory ---
-UPLOAD_DIR = "uploads"
+# 實體目錄移到 DATA_DIR 下（一併持久化）；對外 URL 仍維持 /uploads/...，前端與 DB 既有資料不受影響。
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
@@ -63,7 +73,7 @@ _DEFAULT_DEVICES = [
 # --- DB init ---
 
 def init_db():
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "CREATE TABLE IF NOT EXISTS results "
@@ -109,7 +119,7 @@ def _row_to_device(r):
 
 @app.get("/devices")
 def get_devices():
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT marker_id, name, description, created_at, work_instruction, image_url "
@@ -121,7 +131,7 @@ def get_devices():
 
 @app.get("/devices/{marker_id}")
 def get_device(marker_id: int):
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT marker_id, name, description, created_at, work_instruction, image_url "
@@ -137,7 +147,7 @@ def get_device(marker_id: int):
 def create_device(data: DeviceCreate):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
-        with sqlite3.connect("inspection.db") as conn:
+        with sqlite3.connect(DB_PATH) as conn:
             conn.execute(
                 "INSERT INTO devices "
                 "(marker_id, name, description, created_at, work_instruction, image_url) "
@@ -160,7 +170,7 @@ def update_device(marker_id: int, data: DeviceUpdate):
     if data.work_instruction is not None: fields.append("work_instruction = ?"); params.append(data.work_instruction)
     if data.image_url        is not None: fields.append("image_url = ?");        params.append(data.image_url)
     params.append(marker_id)
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE devices SET " + ", ".join(fields) + " WHERE marker_id = ?", params)
         if cursor.rowcount == 0:
@@ -172,7 +182,7 @@ def update_device(marker_id: int, data: DeviceUpdate):
 async def upload_device_image(marker_id: int, file: UploadFile = File(...)):
     """Upload an image for a device. Returns the public URL."""
     # Validate device exists
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         row = conn.execute("SELECT marker_id FROM devices WHERE marker_id = ?", [marker_id]).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -187,7 +197,7 @@ async def upload_device_image(marker_id: int, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, f)
 
     image_url = f"/uploads/{filename}"
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.execute("UPDATE devices SET image_url = ? WHERE marker_id = ?", [image_url, marker_id])
 
     return {"message": "Image uploaded", "marker_id": marker_id, "image_url": image_url}
@@ -195,7 +205,7 @@ async def upload_device_image(marker_id: int, file: UploadFile = File(...)):
 
 @app.delete("/devices/{marker_id}", status_code=200)
 def delete_device(marker_id: int):
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM devices WHERE marker_id = ?", [marker_id])
         if cursor.rowcount == 0:
@@ -227,7 +237,7 @@ def get_results(
         "FROM results r LEFT JOIN devices d ON r.marker_id = d.marker_id "
         + where + " ORDER BY r.update_time DESC"
     )
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
         data = cursor.fetchall()
@@ -241,7 +251,7 @@ def get_results(
 def update_result(data: InspectionData):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     new_uuid = str(uuid.uuid4())
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             "INSERT INTO results (id, marker_id, status, update_time) VALUES (?, ?, ?, ?)",
             (new_uuid, data.marker_id, data.status.value, now),
@@ -251,7 +261,7 @@ def update_result(data: InspectionData):
 
 @app.delete("/results/{record_id}", status_code=200)
 def delete_result(record_id: str):
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM results WHERE id = ?", [record_id])
         if cursor.rowcount == 0:
@@ -271,7 +281,7 @@ def get_stats(marker_id: Optional[int] = Query(None)):
         "FROM results r LEFT JOIN devices d ON r.marker_id = d.marker_id "
         + where + " GROUP BY r.marker_id ORDER BY r.marker_id"
     )
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
         rows = cursor.fetchall()
@@ -295,7 +305,7 @@ def get_stats_by_device(marker_id: int):
         "FROM results r LEFT JOIN devices d ON r.marker_id = d.marker_id "
         "WHERE r.marker_id = ? GROUP BY r.marker_id"
     )
-    with sqlite3.connect("inspection.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(sql, [marker_id])
         row = cursor.fetchone()
@@ -315,7 +325,7 @@ def get_stats_by_device(marker_id: int):
 
 @app.get("/export")
 def export_report():
-    db_path = "inspection.db"
+    db_path = DB_PATH
     if not os.path.exists(db_path):
         return {"error": "Database not found."}
     try:

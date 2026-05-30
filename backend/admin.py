@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import os
 
-def export_inspection_to_excel(db_path='inspection.db'):
+def export_inspection_to_excel(db_path=os.path.join(os.environ.get('DATA_DIR', 'data'), 'inspection.db')):
     # 檢查資料庫是否存在
     if not os.path.exists(db_path):
         print(f"錯誤：找不到資料庫檔案 {db_path}")
