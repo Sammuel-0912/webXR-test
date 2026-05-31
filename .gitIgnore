@@ -8,3 +8,8 @@
 # AR.js 3x3 barcode marker 圖（功能必需，需納入版控，覆蓋上面的 *.png）
 !frontend-project/public/markers/**/*.png
 
+
+# Python 編譯快取
+__pycache__/
+
+CLAUDE.md

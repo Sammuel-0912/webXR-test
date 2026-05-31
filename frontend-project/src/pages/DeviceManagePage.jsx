@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ThemeToggle from '../components/ThemeToggle'
+import { resolveBackendUrl } from '../config'
 
-// ── 後端連線設定（從 env var 或 hostname 推斷預設值）────────────────
-function guessBackend() {
-  const h = window.location.hostname
-  const envBackend = import.meta.env.VITE_BACKEND_URL
-  return (envBackend || `http://${h}:8000`).replace(/\/$/, '')
-}
-
-const DEFAULT_BACKEND = guessBackend()
+const DEFAULT_BACKEND = resolveBackendUrl()
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function isLocalhost(url) {

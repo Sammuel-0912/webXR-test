@@ -14,9 +14,14 @@ import shutil
 
 app = FastAPI()
 
+# CORS 來源：預設 "*"（維持原行為）；正式環境可用環境變數 CORS_ORIGINS
+# 指定白名單（逗號分隔），例：CORS_ORIGINS="https://app.example.com,https://admin.example.com"
+_cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
+CORS_ORIGINS = ["*"] if _cors_env == "*" else [o.strip() for o in _cors_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -35,6 +40,9 @@ DB_PATH = os.path.join(DATA_DIR, "inspection.db")
 UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+# 允許上傳的圖片副檔名（集中管理，供 upload 端點驗證）
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 # --- Enums & Models ---
 
@@ -188,7 +196,7 @@ async def upload_device_image(marker_id: int, file: UploadFile = File(...)):
         raise HTTPException(status_code=404, detail="Device not found")
 
     ext = os.path.splitext(file.filename or "image.jpg")[1].lower()
-    if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
         raise HTTPException(status_code=422, detail="Unsupported image type")
 
     filename  = f"device_{marker_id}_{uuid.uuid4().hex[:8]}{ext}"

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { resolveBackendUrl } from '../config'
 
 // 以 ?url 取得 npm 套件預建檔的 URL：Vite 會把檔案原樣複製到 dist/assets 並加 hash，
 // 不經 bundler 解析。AR.js 的預建檔是依賴全域 AFRAME 的 IIFE，無法被當成 ESM 直接 import，
@@ -18,6 +19,12 @@ function loadScript(src) {
   })
 }
 
+// ── 設定常數（集中管理，避免散落的 magic number）──────────────
+const REQUEST_TIMEOUT_MS     = 8000  // fetch 逾時
+const QR_AUTO_DETECT_DELAY_MS = 600  // QR 模式：等 UI 就緒後自動觸發 marker
+const MARKER_LOST_DELAY_MS   = 2500  // marker 短暫遮蔽不立即收面板的緩衝
+const FEEDBACK_DURATION_MS   = 1800  // 送出結果後回饋訊息顯示時長
+
 const MARKER_COLORS = [
   '#22c55e','#3b82f6','#f59e0b','#a855f7',
   '#ef4444','#06b6d4','#84cc16','#f97316',
@@ -29,11 +36,8 @@ export default function ArInspectPage() {
   const [searchParams] = useSearchParams()
   const navigate       = useNavigate()
 
-  // BACKEND：URL param（QR Code）> Vite env var > localhost fallback
-  const BACKEND = useRef(
-    (searchParams.get('backend') || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000')
-      .replace(/\/$/, '')
-  ).current
+  // BACKEND：URL param（QR Code）> Vite env var > hostname fallback（見 config.js）
+  const BACKEND = useRef(resolveBackendUrl(searchParams.get('backend'))).current
   const urlMarkerId = searchParams.get('marker_id')
   const qrMode      = urlMarkerId !== null
 
@@ -78,7 +82,7 @@ export default function ArInspectPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(BACKEND + '/devices', { signal: AbortSignal.timeout(8000) })
+        const res = await fetch(BACKEND + '/devices', { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
         if (!res.ok) throw new Error('HTTP ' + res.status)
         const list = await res.json()
         list.forEach(d => { cacheRef.current[d.marker_id] = d })
@@ -88,7 +92,7 @@ export default function ArInspectPage() {
         setConnError('後端連線失敗 (' + BACKEND + ')')
       } finally {
         setPhase('start')
-        if (qrMode) setTimeout(() => onMarkerFound(Number(urlMarkerId)), 600)
+        if (qrMode) setTimeout(() => onMarkerFound(Number(urlMarkerId)), QR_AUTO_DETECT_DELAY_MS)
       }
     }
     load()
@@ -115,7 +119,7 @@ export default function ArInspectPage() {
         setSheetOpen(false)
         setScanVisible(true)
       }
-    }, 2500)
+    }, MARKER_LOST_DELAY_MS)
   }, [qrMode])
 
   // ── 使用者點擊「開始 AR 掃描」後才建立 scene（確保 user gesture）
@@ -192,7 +196,7 @@ export default function ArInspectPage() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ marker_id: markerIdRef.current, status }),
-        signal:  AbortSignal.timeout(8000),
+        signal:  AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       })
       if (res.ok) {
         setFeedback({ type: 'success', msg: status === 'ok' ? '✔ 已記錄：正常 OK' : '⚠ 已記錄：異常 WARN' })
@@ -200,9 +204,9 @@ export default function ArInspectPage() {
           setTimeout(() => {
             setSheetOpen(false); setScanVisible(true)
             markerIdRef.current = null; setFeedback(null); setBtnsDisabled(false)
-          }, 1800)
+          }, FEEDBACK_DURATION_MS)
         } else {
-          setTimeout(() => { setFeedback(null); setBtnsDisabled(false) }, 1800)
+          setTimeout(() => { setFeedback(null); setBtnsDisabled(false) }, FEEDBACK_DURATION_MS)
         }
       } else {
         const b = await res.json().catch(() => ({}))

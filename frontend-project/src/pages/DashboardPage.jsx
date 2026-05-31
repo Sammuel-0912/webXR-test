@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ThemeToggle from '../components/ThemeToggle'
+import { resolveBackendUrl } from '../config'
 
-const BACKEND = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000').replace(/\/$/, '')
+const BACKEND = resolveBackendUrl()
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function okRateModifier(rate) {
