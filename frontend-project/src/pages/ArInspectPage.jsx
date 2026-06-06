@@ -37,7 +37,8 @@ export default function ArInspectPage() {
   const navigate       = useNavigate()
 
   // BACKEND：URL param（QR Code）> Vite env var > hostname fallback（見 config.js）
-  const BACKEND = useRef(resolveBackendUrl(searchParams.get('backend'))).current
+  // 用 useState 惰性初始化只在掛載時計算一次,避免在 render 期間讀取 ref.current。
+  const [BACKEND] = useState(() => resolveBackendUrl(searchParams.get('backend')))
   const urlMarkerId = searchParams.get('marker_id')
   const qrMode      = urlMarkerId !== null
 

@@ -301,6 +301,8 @@ export default function DeviceManagePage() {
     }
   }
 
+  // 抓設備清單屬 effect 同步外部系統的正當用途;fetchDevices 僅依賴 backendUrl（已在 deps）。
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { fetchDevices() }, [backendUrl])
 
   function showToast(msg, type = 'success') {

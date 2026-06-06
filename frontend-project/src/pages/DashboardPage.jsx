@@ -5,6 +5,9 @@ import { resolveBackendUrl } from '../config'
 
 const BACKEND = resolveBackendUrl()
 
+// 單頁筆數（與後端 DEFAULT_PAGE_SIZE 對應,避免硬編碼散落）
+const PAGE_SIZE = 100
+
 // ── Helpers ──────────────────────────────────────────────────────────
 function okRateModifier(rate) {
   if (rate >= 0.9) return 'high'
@@ -82,7 +85,9 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const [stats, setStats]       = useState([])
   const [results, setResults]   = useState({})
+  const [total, setTotal]       = useState(0)
   const [loading, setLoading]   = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError]       = useState(null)
 
   // Filters
@@ -91,30 +96,60 @@ export default function DashboardPage() {
   const [filterEnd,    setFilterEnd]    = useState('')
 
   // ── Fetch ──────────────────────────────────────────────────────────
-  const fetchData = useCallback(async () => {
-    setError(null)
-    try {
-      const params = new URLSearchParams()
-      if (filterMarker !== '') params.append('marker_id', filterMarker)
-      if (filterStart)         params.append('start', filterStart)
-      if (filterEnd)           params.append('end', filterEnd)
-      const qs = params.toString() ? '?' + params.toString() : ''
+  // 組裝 /results 查詢字串（含分頁參數）
+  const buildResultsQuery = useCallback((offset) => {
+    const params = new URLSearchParams()
+    if (filterMarker !== '') params.append('marker_id', filterMarker)
+    if (filterStart)         params.append('start', filterStart)
+    if (filterEnd)           params.append('end', filterEnd)
+    params.append('limit',  PAGE_SIZE)
+    params.append('offset', offset)
+    return '?' + params.toString()
+  }, [filterMarker, filterStart, filterEnd])
 
-      const [statsRes, resultsRes] = await Promise.all([
-        fetch(BACKEND + '/stats'),
-        fetch(BACKEND + '/results' + qs),
-      ])
-      if (!statsRes.ok || !resultsRes.ok) throw new Error('API 錯誤')
-      setStats(await statsRes.json())
-      setResults(await resultsRes.json())
+  // append=false：重置為第一頁；append=true：載入下一頁並接續既有資料
+  const fetchResults = useCallback(async (append = false, offset = 0) => {
+    if (append) setLoadingMore(true)
+    else        setError(null)
+    try {
+      const res = await fetch(BACKEND + '/results' + buildResultsQuery(offset))
+      if (!res.ok) throw new Error('API 錯誤')
+      const data = await res.json()
+      setTotal(Number(res.headers.get('X-Total-Count')) || 0)
+      setResults(prev => (append ? { ...prev, ...data } : data))
     } catch {
       setError('無法連線至後端，請確認服務是否已啟動。')
     } finally {
-      setLoading(false)
+      if (append) setLoadingMore(false)
     }
-  }, [filterMarker, filterStart, filterEnd])
+  }, [buildResultsQuery])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch(BACKEND + '/stats')
+      if (!res.ok) throw new Error('API 錯誤')
+      setStats(await res.json())
+    } catch {
+      setError('無法連線至後端，請確認服務是否已啟動。')
+    }
+  }, [])
+
+  // 首次載入統計（只需一次）。向後端抓資料屬 effect 同步外部系統的正當用途,
+  // 此處刻意在 effect 內觸發 setState,故停用過度告警的規則。
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchStats() }, [fetchStats])
+
+  // 首次載入 + 篩選條件變動 → 重新抓第一頁
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchResults(false, 0).finally(() => setLoading(false))
+  }, [fetchResults])
+
+  // 手動重新整理（統計 + 紀錄第一頁）
+  const refresh = () => { fetchStats(); fetchResults(false, 0) }
+
+  // 載入更多：以目前已載入筆數作為 offset
+  const loadMore = () => fetchResults(true, Object.keys(results).length)
 
   // ── Delete ─────────────────────────────────────────────────────────
   async function handleDelete(id) {
@@ -127,7 +162,8 @@ export default function DashboardPage() {
           delete next[id]
           return next
         })
-        fetch(BACKEND + '/stats').then(r => r.json()).then(setStats).catch(() => {})
+        setTotal(t => Math.max(0, t - 1))
+        fetchStats()
       } else {
         alert('刪除失敗')
       }
@@ -171,7 +207,7 @@ export default function DashboardPage() {
           <button className="btn btn-outline-secondary" onClick={handleExport}>
             ⬇ 匯出報表
           </button>
-          <button className="btn btn-outline-secondary" onClick={fetchData}>
+          <button className="btn btn-outline-secondary" onClick={refresh}>
             ↺ 刷新
           </button>
           <ThemeToggle />
@@ -232,7 +268,7 @@ export default function DashboardPage() {
               />
             </div>
             <div className="col-12 col-lg-3 d-flex gap-2">
-              <button className="btn btn-sm btn-outline-secondary flex-fill" onClick={fetchData}>篩選</button>
+              <button className="btn btn-sm btn-outline-secondary flex-fill" onClick={() => fetchResults(false, 0)}>篩選</button>
               <button
                 className="btn btn-sm btn-outline-secondary flex-fill"
                 onClick={() => { setFilterMarker(''); setFilterStart(''); setFilterEnd('') }}
@@ -243,6 +279,20 @@ export default function DashboardPage() {
           </div>
 
           <ResultsTable results={results} onDelete={handleDelete} />
+
+          {Object.keys(results).length < total && (
+            <div className="text-center mt-3">
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore
+                  ? '載入中…'
+                  : `載入更多（已顯示 ${Object.keys(results).length} / ${total}）`}
+              </button>
+            </div>
+          )}
         </section>
       </main>
     </div>
